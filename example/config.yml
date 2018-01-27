@@ -1,0 +1,27 @@
+---
+
+# coinwatch config
+# Remote API: https://api.coinmarketcap.com/v1/ticker/?limit=0
+
+trades:
+  bitcoin:
+    - amount: 3.1
+      price: 17235.23
+      date: 2017-04-30
+    - amount: 1
+      price: 10010.50
+      date: 2017-08-31
+    - amount: 5.323
+      price: 11100.52
+      date: 2017-12-05
+    - amount: 0.001
+      price: 110323.54
+      date: 2018-01-27
+  ethereum:
+    - amount: 20
+      price: 1070
+      date: 2017-12-05
+  iota:
+    - amount: 100
+      price: 2.15
+      date: 2017-11-17
