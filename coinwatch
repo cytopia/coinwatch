@@ -1,0 +1,493 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# The MIT License (MIT)
+#
+# Copyright (c) 2018 cytopia <cytopia@everythingcli.org>
+
+'''
+Coinwatch is a low-dependency python[23] client to keep track of your
+crypto trades and easily let's you see if you are winning or losing.
+
+No financial aid, support or any other recommendation is provided.
+Trade at your own risk! And only invest what you can effort to lose.
+
+Currently supported API's are:
+  - coinmarketcap
+'''
+
+
+
+############################################################
+# Imports
+############################################################
+
+# Make it work for python2 and python3
+from __future__ import print_function
+
+try:
+    # For Python 3.0 and later
+    from urllib.request import Request, urlopen
+    from urllib.error import URLError, HTTPError
+except ImportError:
+    # Fall back to Python 2's urllib2
+    from urllib2 import Request, urlopen
+    from urllib2 import URLError, HTTPError
+
+# Default imports
+import os
+import getopt
+import sys
+import json
+import yaml
+
+
+
+############################################################
+# Globals
+############################################################
+
+NAME = 'coinwatch'
+AUTHOR = 'cytopia'
+VERSION = '0.1'
+API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
+
+
+
+EXAMPLE_CONFIG = '''
+---
+#
+# coinwatch config
+#
+# Remote API: https://api.coinmarketcap.com/v1/ticker/?limit=0
+#
+#
+# Config file description
+# -----------------------
+# trades:
+#   CURRENCY_ID:  <-- [string]      check Remote API url for 'id' field
+#     - amount:   <-- [float]       How many coins for that currency were bought
+#       price:    <-- [float]       Price for 1 coin of that currency
+#       date:     <-- [yyyy-mm-dd]  When was that bought
+#
+#
+# Config file example:
+# --------------------
+# trades:
+#   bitcoin:
+#     - amount:  5.323
+#       price:   10100.52
+#       date:    2017-12-05
+#     - amount:  0.001
+#       price:   110323.54
+#       date:    2018-01-27
+#   ethereum:
+#     - amount:  20
+#       price:   1070
+#       date:    2017-12-05
+#   iota: []
+'''
+
+############################################################
+# Class
+############################################################
+
+class Color(object):
+    '''Class that returns shell color code if desired.'''
+
+    def __init__(self, enable):
+        '''Enable or disable color support'''
+        if enable:
+            self.clr_blue = '\033[94m'
+            self.clr_green = '\033[92m'
+            self.clr_yellow = '\033[93m'
+            self.clr_red = '\033[91m'
+            self.clr_reset = '\033[0m'
+        else:
+            self.clr_blue = ''
+            self.clr_green = ''
+            self.clr_yellow = ''
+            self.clr_red = ''
+            self.clr_reset = ''
+
+    def blue(self):
+        '''Return blue color code'''
+        return self.clr_blue
+
+    def green(self):
+        '''Return green color code'''
+        return self.clr_green
+
+    def yellow(self):
+        '''Return yellow color code'''
+        return self.clr_yellow
+
+    def red(self):
+        '''Return red color code'''
+        return self.clr_red
+
+    def reset(self):
+        '''Return reset color code'''
+        return self.clr_reset
+
+
+class Table(object):
+    '''Custom command line table drawer class'''
+
+    # Default column width if not set
+    def_width = 10
+    # Row formatter used by format()
+    row_format = None
+    sep_format = None
+
+    def __init__(self, rows):
+        '''Defines the table with number of rows'''
+        self.rows = rows
+        # Set colum width with default widths
+        self.set_col_widths()
+
+    def set_col_widths(self, *widths):
+        '''
+        Set colum widths.
+        If colum width is not set, default_width will be used
+        '''
+        colum_width = []
+
+        # Store colum widths in array
+        for width in widths:
+            colum_width.append(width)
+
+        # Fill missing widths with default widths:
+        if len(widths) < self.rows:
+            for i in range((self.rows - len(widths))):
+                colum_width.append(self.def_width)
+
+        # Create row format string. E.g: '{:<10}'
+        self.row_format = '|'
+        for width in colum_width:
+            self.row_format += ' {:<' + str(width) + '} |'
+
+        # Create separator format. E.g: '{:-<10}'
+        self.sep_format = '|'
+        for width in colum_width:
+            self.sep_format += '-{:-<' + str(width) + '}-|'
+
+    def get_row(self, *colums):
+        '''Get formated row with X arguments (num of colums)'''
+        return self.row_format.format(*colums)
+
+    def get_sep(self):
+        '''Get empty separator row'''
+        return self.sep_format.format(*['' for i in range(self.rows)])
+
+
+
+############################################################
+# Helper Functions
+############################################################
+
+def logerr(*args):
+    '''Error wrapper for print function'''
+    print(''.join(map(str, args)), file=sys.stderr)
+
+
+def normalize_err(error_message):
+    '''Normalize Python error message that spawns accross multiple lines'''
+    error_message = str(error_message).splitlines()
+    error_message = ''.join(error_message)
+    return error_message
+
+
+def fetch_url(url):
+    '''Fetch body as text from http url'''
+    req = Request(url)
+    try:
+        response = urlopen(req)
+    except HTTPError as err:
+        logerr('[ERR] Cannot connect to %s' % (url))
+        logerr('[ERR] Error code: ', err.code)
+        return ''
+    except URLError as err:
+        logerr('[ERR] Cannot connect to %s' % (url))
+        logerr('[ERR] Reason:', err.reason)
+        return ''
+    else:
+        return response.read().decode('utf-8')
+
+
+def to_yaml(string):
+    '''Convert string to yaml'''
+    try:
+        data = yaml.load(string)
+    except yaml.YAMLError as err:
+        logerr('[ERR] Cannot convert string to yaml')
+        logerr('[ERR] ', normalize_err(err))
+        return dict()
+    else:
+        if data is None:
+            return dict()
+    return data
+
+
+def to_json(string):
+    '''Convert string to json'''
+    try:
+        data = json.loads(string)
+    except ValueError as err:
+        logerr('[ERR] Cannot convert to json')
+        logerr('[ERR] ', normalize_err(err))
+        return dict()
+    else:
+        if data is None:
+            return dict()
+    return data
+
+
+def ffloat(fnum, flen, fdec):
+    '''
+    Custom float formatting
+    fnum: float number to format
+    flen: max length of number incl decimal places
+    fdec: how many decimal places to show
+    '''
+    fnum = float(fnum)
+    fnum = ('{0:.' + str(fdec) + 'f}').format(fnum)
+    return ('{:>' + str(flen) + '}').format(fnum)
+
+
+
+############################################################
+# System Functions
+############################################################
+
+def print_version():
+    '''Show program version'''
+    print(NAME, 'v'+ VERSION)
+    print('Using Python ' + str(sys.version_info[0]) + '.' + str(sys.version_info[1]))
+    print('MIT License - Copyright (c) 2018 cytopia')
+    print('https://github.com/cytopia/coinwatch')
+
+
+def print_help():
+    '''Show program help'''
+    print('''Usage: %s [-vhct]
+       %s [--version] [--help] [--config <path>] [--text]
+
+%s is a low-dependency python[23] client to keep track of your crypto trades
+and easily let's you see if you are winning or losing.
+
+OPTIONS:
+    -v, --version  Show version and exit
+    -h, --help     Show this help dialog and exit
+    -c, --config   Specify path of an alternative configuration file.
+    -t, --text     Do not display colors. Text mode is designed to use the
+                   output of this program as input for other programs. Such as:
+                   $ watch --interval=10 'coinwatch -t'
+
+NOTE:
+    No financial aid, support or any other recommendation is provided.
+    Trade at your own risk! And only invest what you can effort to lose.
+
+API:
+    Currently supported remote price and coin API's are:
+      - coinmarketcap
+
+CONFIGURATION:
+    When starting %s for the first time a base configuration file will be
+    created in ~/.config/%s/config.yml.
+    You should edit this file and add your trades:
+      - What currency
+      - When bought
+      - How much bought
+      - Price for 1 coin of currency at that date''' % (NAME, NAME, NAME, NAME, NAME))
+
+
+def get_config_path():
+    '''Get path of local config file'''
+    home = os.path.expanduser('~')
+    conf = os.path.join(home, '.config', NAME, 'config.yml')
+    return conf
+
+
+def get_trades(settings):
+    '''Read trades from local yaml configuration file'''
+    if settings['config']:
+        path = settings['config']
+    else:
+        path = get_config_path()
+
+    if os.path.isfile(path):
+        with open(path, 'r') as stream:
+            data = to_yaml(stream)
+            if 'trades' in data:
+                return data['trades']
+
+    return dict()
+
+
+def print_stats(currencies, trades, settings):
+    '''Print trading stats in a nice table'''
+    total_win = 0
+
+    # Initialize colors
+    clr = Color(settings['color'])
+
+    # Initialize the table
+    tbl = Table(7)
+    tbl.set_col_widths(17, 10, 15, 12, 12, 10, 10)
+
+    # Print headline
+    print(tbl.get_row('coin', 'buy date', 'amount', 'buy price', 'now price',
+                      'percentage', 'win / loss'))
+    print(tbl.get_sep())
+
+    for currency in currencies:
+
+        # Do we track a currency?
+        # (Remote currency is found in local config)
+        if currency['id'] in trades:
+
+            name = currency['id']
+
+            # Only proceed if trade happened (defined in config)
+            if trades[name]:
+                # Loop over trades in each currency
+                # (Each currency can have multiple trades on different dates/times)
+                for trade in trades[name]:
+                    # Extract values
+                    date = str(trade.get('date', 'yyyy-mm-dd'))
+                    amount = float(trade.get('amount', 0))
+                    buy_price = float(trade.get('price', 0))
+                    now_price = float(currency['price_usd'])
+
+                    # Calculate if was win or loss
+                    win = (now_price * amount) - (buy_price * amount)
+
+                    # Calculate percentage of win/loss
+                    if buy_price != 0:
+                        percentage = 100 * now_price / buy_price
+                    else:
+                        percentage = 0
+
+                    # Add to overall win/loss
+                    total_win += win
+
+                    # Decide on display color
+                    if percentage < 100:
+                        clr_pre = clr.red()
+                        clr_pst = clr.reset()
+                    else:
+                        clr_pre = clr.green()
+                        clr_pst = clr.reset()
+
+                    # Print current row
+                    print(tbl.get_row(
+                        name,
+                        date,
+                        ffloat(amount, 13, 8),
+                        ffloat(buy_price, 12, 5),
+                        ffloat(now_price, 12, 5),
+                        ffloat(percentage, 10, 1),
+                        clr_pre + ffloat(win, 10, 2) + clr_pst
+                    ))
+
+                # Print separater after each different curreny
+                print(tbl.get_sep())
+
+    # Print overall summary
+    if total_win < 0:
+        print(tbl.get_row('TOTAL', '', '', '', '', '',
+                          clr.red() + ffloat(total_win, 10, 2) + clr.reset()))
+    elif settings['color'] and total_win >= 0:
+        print(tbl.get_row('TOTAL', '', '', '', '', '',
+                          clr.green() + ffloat(total_win, 10, 2) + clr.reset()))
+    else:
+        print(tbl.get_row('TOTAL', '', '', '', '', '', ffloat(total_win, 10, 2)))
+
+
+def bootstrap():
+    '''Bootstrap the application'''
+    conf_file = get_config_path()
+    conf_dir = os.path.dirname(conf_file)
+
+    if not os.path.isfile(conf_file):
+        if not os.path.isdir(conf_dir):
+            os.makedirs(conf_dir)
+
+        pfile = open(conf_file, 'w')
+        pfile.write(str(EXAMPLE_CONFIG))
+        pfile.close()
+
+
+def parse_args(argv, settings):
+    '''Parse command line arguments.'''
+
+    # Define command line options
+    try:
+        opts, argv = getopt.getopt(argv, 'vhc:t', ['version', 'help', 'config=', 'text'])
+    except getopt.GetoptError as err:
+        logerr('[ERR] ', err)
+        logerr('Type --help for help')
+        sys.exit(2)
+
+    # Get command line options
+    for opt, arg in opts:
+        if opt in ('-h', '--help'):
+            print_help()
+            sys.exit()
+        elif opt in ('-v', '--version'):
+            print_version()
+            sys.exit()
+        elif opt in ('-t', '--text'):
+            settings['color'] = False
+        elif opt in ('-c', '--config'):
+            if not os.path.isfile(arg):
+                logerr('[ERR] ' + opt + ' specified config does not exist: ' + arg)
+                sys.exit(2)
+            settings['config'] = arg
+
+    return settings
+
+
+############################################################
+# Main Function
+############################################################
+
+def main(argv):
+    '''Main entrypoint.'''
+
+    # Default settings if not otherwise specified via cmd args
+    settings = {
+        'color': True,
+        'config': None
+    }
+    # Overwrite settings
+    settings = parse_args(argv, settings)
+
+    # bootstrap (creating config & dir)
+    bootstrap()
+
+    # Read local trading config
+    trades = get_trades(settings)
+
+    if not trades:
+        if settings['config']:
+            conf = settings['config']
+        else:
+            conf = get_config_path()
+        print('No trades found, check your config:', conf)
+        sys.exit(0)
+
+    # Get remote price info
+    currencies = to_json(fetch_url(API_URL))
+    # Show trading stats
+    print_stats(currencies, trades, settings)
+
+
+
+############################################################
+# Main Entry Point
+############################################################
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
