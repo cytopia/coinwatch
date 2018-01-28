@@ -6,6 +6,7 @@
 **[Configuration](#configuration)** |
 **[Options](#options)** |
 **[API](#api)** |
+**[Requirements](#requirements)** |
 **[License](#license)**
 
 [![Build Status](https://travis-ci.org/cytopia/coinwatch.svg?branch=master)](https://travis-ci.org/cytopia/coinwatch)
@@ -120,6 +121,19 @@ CONFIGURATION:
 
 Currently supported API's are:
   - coinmarketcap
+
+
+## Requirements
+
+`coinwatch` itself does not rely on any third-party packages, only one of the following Python versions is required:
+
+* Python 2.6
+* Python 2.7
+* Python 3.2
+* Python 3.3
+* Python 3.4
+* Python 3.5
+* Python 3.6
 
 
 ## License
