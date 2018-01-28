@@ -2,8 +2,7 @@
 ### Sudo required
 ###
 dist: trusty
-#sudo: required
-sudo: false
+sudo: required
 
 
 ###
@@ -39,7 +38,7 @@ before_install:
 ###
 install:
   # Install
-  - travis_retry pip install --user pylint flake8 pep8
+  - pip install pylint flake8 pep8
   # Show versions
   - pep8 --version   || true
   - flake8 --version || true
