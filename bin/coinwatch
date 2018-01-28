@@ -17,7 +17,6 @@ Currently supported API's are:
 '''
 
 
-
 ############################################################
 # Imports
 ############################################################
@@ -42,7 +41,6 @@ import json
 import yaml
 
 
-
 ############################################################
 # Globals
 ############################################################
@@ -51,7 +49,6 @@ NAME = 'coinwatch'
 AUTHOR = 'cytopia'
 VERSION = '0.1'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
-
 
 
 EXAMPLE_CONFIG = '''
@@ -87,6 +84,7 @@ EXAMPLE_CONFIG = '''
 #       date:    2017-12-05
 #   iota: []
 '''
+
 
 ############################################################
 # Class
@@ -181,7 +179,6 @@ class Table(object):
         return self.sep_format.format(*['' for i in range(self.rows)])
 
 
-
 ############################################################
 # Helper Functions
 ############################################################
@@ -255,14 +252,13 @@ def ffloat(fnum, flen, fdec):
     return ('{:>' + str(flen) + '}').format(fnum)
 
 
-
 ############################################################
 # System Functions
 ############################################################
 
 def print_version():
     '''Show program version'''
-    print(NAME, 'v'+ VERSION)
+    print(NAME, 'v' + VERSION)
     print('Using Python ' + str(sys.version_info[0]) + '.' + str(sys.version_info[1]))
     print('MIT License - Copyright (c) 2018 cytopia')
     print('https://github.com/cytopia/coinwatch')
@@ -482,7 +478,6 @@ def main(argv):
     currencies = to_json(fetch_url(API_URL))
     # Show trading stats
     print_stats(currencies, trades, settings)
-
 
 
 ############################################################
