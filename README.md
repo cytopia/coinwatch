@@ -125,10 +125,10 @@ Currently supported API's are:
 
 ## Requirements
 
-`coinwatch` itself does not rely on any third-party packages, only one of the following Python versions is required:
+`coinwatch` itself requires `pyyaml`. Apart fromt that, only one of the following Python versions is required:
 
-* Python 2.6
-* Python 2.7
+* Python 2.6 (requires `future` for Python 3 compat)
+* Python 2.7 (requires `future` for Python 3 compat)
 * Python 3.2
 * Python 3.3
 * Python 3.4

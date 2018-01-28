@@ -38,6 +38,7 @@ before_install:
 ###
 install:
   # Install
+  - pip install -r requirements.txt
   - pip install pylint flake8 pep8
   # Show versions
   - pep8 --version   || true
