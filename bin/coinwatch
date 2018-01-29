@@ -282,7 +282,7 @@ def fdec(number, length, places, alt_form):
     returns string
     '''
     if not isinstance(number, Decimal):
-        number = Decimal(number)
+        number = Decimal(str(number))
 
     # Correctly round our Decimal
     number = number.quantize(Decimal(('{0:.' + str(places) + 'f}').format(1)))
@@ -384,7 +384,7 @@ def get_trades(settings):
 
 def print_stats(currencies, trades, settings):
     '''Print trading stats in a nice table'''
-    total_win = Decimal(0)
+    total_win = Decimal('0.0')
 
     # Initialize colors
     clr = Color(settings['color'])
@@ -413,9 +413,9 @@ def print_stats(currencies, trades, settings):
                 for trade in trades[name]:
                     # Extract values
                     date = str(trade.get('date', 'yyyy-mm-dd'))
-                    amount = Decimal(trade.get('amount', 0))
-                    buy_price = Decimal(trade.get('price', 0))
-                    now_price = Decimal(currency['price_usd'])
+                    amount = Decimal(str(trade.get('amount', '0.0')))
+                    buy_price = Decimal(str(trade.get('price', '0.0')))
+                    now_price = Decimal(str(currency['price_usd']))
 
                     # Calculate if was win or loss
                     win = (now_price * amount) - (buy_price * amount)
