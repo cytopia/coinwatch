@@ -224,6 +224,7 @@ def random_useragent():
     index = randint(0, len(useragents)-1)
     return useragents[index]
 
+
 def fetch_url(url):
     '''Fetch body as text from http url'''
 
@@ -269,6 +270,7 @@ def to_json(string):
         if data is None:
             return dict()
     return data
+
 
 def fdec(number, length, places, alt_form):
     '''
