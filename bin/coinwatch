@@ -34,6 +34,8 @@ except ImportError:
     from urllib2 import URLError, HTTPError
 
 # Default imports
+from decimal import Decimal
+from random import randint
 import os
 import getopt
 import sys
@@ -47,7 +49,7 @@ import yaml
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.1'
+VERSION = '0.2'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -62,10 +64,12 @@ EXAMPLE_CONFIG = '''
 # Config file description
 # -----------------------
 # trades:
-#   CURRENCY_ID:  <-- [string]      check Remote API url for 'id' field
-#     - amount:   <-- [float]       How many coins for that currency were bought
-#       price:    <-- [float]       Price for 1 coin of that currency
-#       date:     <-- [yyyy-mm-dd]  When was that bought
+#   # CURRENCY_ID is found by looking up the 'id' key from
+#   # https://api.coinmarketcap.com/v1/ticker/?limit=0
+#   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
+#     - amount:   # <-- [decimal]     How many coins for that currency were bought
+#       price:    # <-- [decimal]     Price for 1 coin of that currency
+#       date:     # <-- [yyyy-mm-dd]  When was that bought
 #
 #
 # Config file example:
@@ -195,9 +199,37 @@ def normalize_err(error_message):
     return error_message
 
 
+def random_useragent():
+    '''Returns random useragent'''
+    useragents = [
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.7.01001)',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 5.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20100101 Firefox/5.02',
+        'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
+        'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
+    ]
+    index = randint(0, len(useragents)-1)
+    return useragents[index]
+
+
 def fetch_url(url):
     '''Fetch body as text from http url'''
-    req = Request(url)
+
+    useragent = random_useragent()
+    req = Request(url, headers={'User-Agent': useragent})
     try:
         response = urlopen(req)
     except HTTPError as err:
@@ -240,16 +272,43 @@ def to_json(string):
     return data
 
 
-def ffloat(fnum, flen, fdec):
+def fdec(number, length, places, alt_form):
     '''
-    Custom float formatting
-    fnum: float number to format
-    flen: max length of number incl decimal places
-    fdec: how many decimal places to show
+    Custom decimal format wrapper
+    number:   the decinaml number to format
+    length:   total length including dot and dec places
+    places:   how many decimal places to show
+    alt_form: Altermative number format
+    returns string
     '''
-    fnum = float(fnum)
-    fnum = ('{0:.' + str(fdec) + 'f}').format(fnum)
-    return ('{:>' + str(flen) + '}').format(fnum)
+    if not isinstance(number, Decimal):
+        number = Decimal(str(number))
+
+    # Correctly round our Decimal
+    number = number.quantize(Decimal(('{0:.' + str(places) + 'f}').format(1)))
+
+    # Correctly format our Decimal
+    fnumber = ('{0:,.' + str(places) + 'f}').format(number)
+
+    # Remove all decimal places that are 0 and refill them up with spaces
+    # However, keep at least one and max two zeros if using decimal places.
+    # This will cause a more readable output and numbers will look like this:
+    #  22.00
+    #   2.30
+    #   2.31432
+    # 143.0001
+    if places > 0 and alt_form:
+        fnumber = fnumber.rstrip('0')
+        fnumber = fnumber.split('.')
+        while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
+            fnumber[1] = fnumber[1] + '0'
+        while len(fnumber[1]) < places:
+            fnumber[1] = fnumber[1] + ' '
+
+        fnumber = fnumber[0] + '.' + fnumber[1]
+
+    # Return right-aligned string
+    return ('{:>' + str(length) + '}').format(fnumber)
 
 
 ############################################################
@@ -266,8 +325,8 @@ def print_version():
 
 def print_help():
     '''Show program help'''
-    print('''Usage: %s [-vhct]
-       %s [--version] [--help] [--config <path>] [--text]
+    print('''Usage: %s [-vhctf]
+       %s [--version] [--help] [--config <path>] [--text] [--format]
 
 %s is a low-dependency python[23] client to keep track of your crypto trades
 and easily let's you see if you are winning or losing.
@@ -279,6 +338,8 @@ OPTIONS:
     -t, --text     Do not display colors. Text mode is designed to use the
                    output of this program as input for other programs. Such as:
                    $ watch --interval=10 'coinwatch -t'
+    -f, --format   Alternative format for displaying large numbers.
+                   Try it out, might be more readable.
 
 NOTE:
     No financial aid, support or any other recommendation is provided.
@@ -323,14 +384,14 @@ def get_trades(settings):
 
 def print_stats(currencies, trades, settings):
     '''Print trading stats in a nice table'''
-    total_win = 0
+    total_win = Decimal('0.0')
 
     # Initialize colors
     clr = Color(settings['color'])
 
     # Initialize the table
     tbl = Table(7)
-    tbl.set_col_widths(17, 10, 15, 12, 12, 10, 10)
+    tbl.set_col_widths(17, 10, 15, 13, 13, 10, 12)
 
     # Print headline
     print(tbl.get_row('coin', 'buy date', 'amount', 'buy price', 'now price',
@@ -352,9 +413,9 @@ def print_stats(currencies, trades, settings):
                 for trade in trades[name]:
                     # Extract values
                     date = str(trade.get('date', 'yyyy-mm-dd'))
-                    amount = float(trade.get('amount', 0))
-                    buy_price = float(trade.get('price', 0))
-                    now_price = float(currency['price_usd'])
+                    amount = Decimal(str(trade.get('amount', '0.0')))
+                    buy_price = Decimal(str(trade.get('price', '0.0')))
+                    now_price = Decimal(str(currency['price_usd']))
 
                     # Calculate if was win or loss
                     win = (now_price * amount) - (buy_price * amount)
@@ -380,25 +441,25 @@ def print_stats(currencies, trades, settings):
                     print(tbl.get_row(
                         name,
                         date,
-                        ffloat(amount, 13, 8),
-                        ffloat(buy_price, 12, 5),
-                        ffloat(now_price, 12, 5),
-                        ffloat(percentage, 10, 1),
-                        clr_pre + ffloat(win, 10, 2) + clr_pst
+                        fdec(amount, 15, 8, settings['format']),
+                        fdec(buy_price, 13, 6, settings['format']),
+                        fdec(now_price, 13, 6, settings['format']),
+                        fdec(percentage, 10, 1, settings['format']),
+                        clr_pre + fdec(win, 12, 2, settings['format']) + clr_pst
                     ))
 
                 # Print separater after each different curreny
                 print(tbl.get_sep())
 
     # Print overall summary
-    if total_win < 0:
+    if settings['color'] and total_win < 0:
         print(tbl.get_row('TOTAL', '', '', '', '', '',
-                          clr.red() + ffloat(total_win, 10, 2) + clr.reset()))
+                          clr.red() + fdec(total_win, 12, 2, settings['format']) + clr.reset()))
     elif settings['color'] and total_win >= 0:
         print(tbl.get_row('TOTAL', '', '', '', '', '',
-                          clr.green() + ffloat(total_win, 10, 2) + clr.reset()))
+                          clr.green() + fdec(total_win, 12, 2, settings['format']) + clr.reset()))
     else:
-        print(tbl.get_row('TOTAL', '', '', '', '', '', ffloat(total_win, 10, 2)))
+        print(tbl.get_row('TOTAL', '', '', '', '', '', fdec(total_win, 12, 2, settings['format'])))
 
 
 def bootstrap():
@@ -420,7 +481,7 @@ def parse_args(argv, settings):
 
     # Define command line options
     try:
-        opts, argv = getopt.getopt(argv, 'vhc:t', ['version', 'help', 'config=', 'text'])
+        opts, argv = getopt.getopt(argv, 'vhc:tf', ['version', 'help', 'config=', 'text', 'format'])
     except getopt.GetoptError as err:
         logerr('[ERR] ', err)
         logerr('Type --help for help')
@@ -436,6 +497,8 @@ def parse_args(argv, settings):
             sys.exit()
         elif opt in ('-t', '--text'):
             settings['color'] = False
+        elif opt in ('-f', '--format'):
+            settings['format'] = True
         elif opt in ('-c', '--config'):
             if not os.path.isfile(arg):
                 logerr('[ERR] ' + opt + ' specified config does not exist: ' + arg)
@@ -455,7 +518,8 @@ def main(argv):
     # Default settings if not otherwise specified via cmd args
     settings = {
         'color': True,
-        'config': None
+        'config': None,
+        'format': False
     }
     # Overwrite settings
     settings = parse_args(argv, settings)

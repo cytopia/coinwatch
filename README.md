@@ -62,8 +62,8 @@ trades:
   # CURRENCY_ID is found by looking up the 'id' key from
   # https://api.coinmarketcap.com/v1/ticker/?limit=0
   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
-    - amount:   # <-- [float]       How many coins for that currency were bought
-      price:    # <-- [float]       Price for 1 coin of that currency
+    - amount:   # <-- [decimal]     How many coins for that currency were bought
+      price:    # <-- [decimal]     Price for 1 coin of that currency
       date:     # <-- [yyyy-mm-dd]  When was that bought
 ```
 
@@ -101,8 +101,8 @@ trades:
 ## Options
 This shows the output of `coinwawtch -h`.
 ```bash
-Usage: coinwatch [-vhct]
-       coinwatch [--version] [--help] [--config <path>] [--text]
+Usage: coinwatch [-vhctf]
+       coinwatch [--version] [--help] [--config <path>] [--text] [--format]
 
 coinwatch is a low-dependency python[23] client to keep track of your crypto trades
 and easily lets you see if you are winning or losing.
@@ -114,6 +114,8 @@ OPTIONS:
     -t, --text     Do not display colors. Text mode is designed to use the
                    output of this program as input for other programs. Such as:
                    $ watch --interval=10 'coinwatch -t'
+    -f, --format   Alternative format for displaying large numbers.
+                   Try it out, might be more readable.
 
 NOTE:
     No financial aid, support or any other recommendation is provided.
@@ -142,7 +144,7 @@ Currently supported remote API's are:
 
 ## Requirements
 
-`coinwatch` itself requires `pyyaml`. Apart fromt that, only one of the following Python versions is required:
+`coinwatch` itself requires `PyYaml`. Apart fromt that, only one of the following Python versions is required:
 
 * Python 2.6 (requires `future` for Python 3 compat)
 * Python 2.7 (requires `future` for Python 3 compat)
