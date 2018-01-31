@@ -100,37 +100,37 @@ class Color(object):
     def __init__(self, enable):
         '''Enable or disable color support'''
         if enable:
-            self.clr_blue = '\033[94m'
-            self.clr_green = '\033[92m'
-            self.clr_yellow = '\033[93m'
-            self.clr_red = '\033[91m'
-            self.clr_reset = '\033[0m'
+            self.__clr_blue = '\033[94m'
+            self.__clr_green = '\033[92m'
+            self.__clr_yellow = '\033[93m'
+            self.__clr_red = '\033[91m'
+            self.__clr_reset = '\033[0m'
         else:
-            self.clr_blue = ''
-            self.clr_green = ''
-            self.clr_yellow = ''
-            self.clr_red = ''
-            self.clr_reset = ''
+            self.__clr_blue = ''
+            self.__clr_green = ''
+            self.__clr_yellow = ''
+            self.__clr_red = ''
+            self.__clr_reset = ''
 
     def blue(self):
         '''Return blue color code'''
-        return self.clr_blue
+        return self.__clr_blue
 
     def green(self):
         '''Return green color code'''
-        return self.clr_green
+        return self.__clr_green
 
     def yellow(self):
         '''Return yellow color code'''
-        return self.clr_yellow
+        return self.__clr_yellow
 
     def red(self):
         '''Return red color code'''
-        return self.clr_red
+        return self.__clr_red
 
     def reset(self):
         '''Return reset color code'''
-        return self.clr_reset
+        return self.__clr_reset
 
 
 class Table(object):
@@ -239,13 +239,6 @@ def logerr(*args):
     print(''.join(map(str, args)), file=sys.stderr)
 
 
-def normalize_err(error_message):
-    '''Normalize Python error message that spawns accross multiple lines'''
-    error_message = str(error_message).splitlines()
-    error_message = ''.join(error_message)
-    return error_message
-
-
 def random_useragent():
     '''Returns random useragent'''
     useragents = [
@@ -297,7 +290,7 @@ def to_yaml(string):
         data = yaml.load(string)
     except yaml.YAMLError as err:
         logerr('[ERR] Cannot convert string to yaml')
-        logerr('[ERR] ', normalize_err(err))
+        logerr('[ERR] ', str(err))
         return dict()
     else:
         if data is None:
@@ -311,7 +304,7 @@ def to_json(string):
         data = json.loads(string)
     except ValueError as err:
         logerr('[ERR] Cannot convert to json')
-        logerr('[ERR] ', normalize_err(err))
+        logerr('[ERR] ', str(err))
         return dict()
     else:
         if data is None:
@@ -327,52 +320,8 @@ def percent(total, part, default):
     return 100 * total / part
 
 
-def fdec(number, length, places, settings, colorize):
-    '''
-    Custom decimal format wrapper
-    number:   the decinaml number to format
-    length:   total length including dot and dec places
-    places:   how many decimal places to show
-    settings: Settings
-    colorize: Colorize positive vs. negative numbers
-    returns string
-    '''
-    if not isinstance(number, Decimal):
-        number = Decimal(str(number))
-
-    # Correctly round our Decimal
-    number = number.quantize(Decimal(('{0:.' + str(places) + 'f}').format(1)))
-
-    # Correctly format our Decimal
-    fnumber = ('{0:,.' + str(places) + 'f}').format(number)
-
-    # Remove all decimal places that are 0 and refill them up with spaces
-    # However, keep at least one and max two zeros if using decimal places.
-    # This will cause a more readable output and numbers will look like this:
-    #  22.00
-    #   2.30
-    #   2.31432
-    # 143.0001
-    if places > 0 and settings['format']:
-        fnumber = fnumber.rstrip('0')
-        fnumber = fnumber.split('.')
-        while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
-            fnumber[1] = fnumber[1] + '0'
-        while len(fnumber[1]) < places:
-            fnumber[1] = fnumber[1] + ' '
-
-        fnumber = fnumber[0] + '.' + fnumber[1]
-
-    if colorize and settings['color']:
-        clr = Color(settings['color'])
-        if number < 0:
-            return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
-        return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
-    return ('{:>' + str(length) + '}').format(fnumber)
-
-
 ############################################################
-# System Functions
+# Project Functions
 ############################################################
 
 def print_version():
@@ -417,6 +366,50 @@ CONFIGURATION:
       - When bought
       - How much bought
       - Price for 1 coin of currency at that date''' % (NAME, NAME, NAME, NAME, NAME))
+
+
+def fdec(number, length, places, settings, colorize):
+    '''
+    Custom decimal format wrapper
+    number:   the decinaml number to format
+    length:   total length including dot and dec places
+    places:   how many decimal places to show
+    settings: Settings
+    colorize: Colorize positive vs. negative numbers
+    returns string
+    '''
+    if not isinstance(number, Decimal):
+        number = Decimal(str(number))
+
+    # Correctly round our Decimal
+    number = number.quantize(Decimal(('{0:.' + str(places) + 'f}').format(1)))
+
+    # Correctly format our Decimal
+    fnumber = ('{0:,.' + str(places) + 'f}').format(number)
+
+    # Remove all decimal places that are 0 and refill them up with spaces
+    # However, keep at least one and max two zeros if using decimal places.
+    # This will cause a more readable output and numbers will look like this:
+    #  22.00
+    #   2.30
+    #   2.31432
+    # 143.0001
+    if places > 0 and settings['format']:
+        fnumber = fnumber.rstrip('0')
+        fnumber = fnumber.split('.')
+        while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
+            fnumber[1] = fnumber[1] + '0'
+        while len(fnumber[1]) < places:
+            fnumber[1] = fnumber[1] + ' '
+
+        fnumber = fnumber[0] + '.' + fnumber[1]
+
+    if colorize and settings['color']:
+        clr = Color(settings['color'])
+        if number < 0:
+            return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
+        return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
+    return ('{:>' + str(length) + '}').format(fnumber)
 
 
 def get_config_path():
