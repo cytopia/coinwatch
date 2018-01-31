@@ -49,7 +49,7 @@ import yaml
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.2'
+VERSION = '0.3'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -136,17 +136,45 @@ class Color(object):
 class Table(object):
     '''Custom command line table drawer class'''
 
+    # is this the first row (has different top line)
+    __first_row = True
+
     # Default column width if not set
-    def_width = 10
+    __def_width = 10
     # Row formatter used by format()
-    row_format = None
-    sep_format = None
+    __row_format = u''
+    __sep_format = u''
+    __top_format = u''
+    __bot_format = u''
+
+    # Create table out of these chars
+    __sym = {
+        'top-lft': u'┌',
+        'top-rgt': u'┐',
+        'top-cen': u'┬',
+        'mid-lft': u'├',
+        'mid-rgt': u'┤',
+        'mid-cen': u'┼',
+        'bot-lft': u'└',
+        'bot-rgt': u'┘',
+        'bot-cen': u'┼',
+        'hor-sep' : u'─',
+        'ver-sep' : u'│'
+    }
 
     def __init__(self, rows):
         '''Defines the table with number of rows'''
         self.rows = rows
         # Set colum width with default widths
         self.set_col_widths()
+
+    def __sep_first(self):
+        '''Get first row separator row'''
+        return self.__top_format.format(*[u'' for i in range(self.rows)])
+
+    def __sep_normal(self):
+        '''Get row separator row'''
+        return self.__sep_format.format(*[u'' for i in range(self.rows)])
 
     def set_col_widths(self, *widths):
         '''
@@ -162,25 +190,44 @@ class Table(object):
         # Fill missing widths with default widths:
         if len(widths) < self.rows:
             for i in range((self.rows - len(widths))):
-                colum_width.append(self.def_width)
+                colum_width.append(self.__def_width)
 
-        # Create row format string. E.g: '{:<10}'
-        self.row_format = '|'
+        # Create row format
+        self.__row_format = self.__sym['ver-sep']
         for width in colum_width:
-            self.row_format += ' {:<' + str(width) + '} |'
+            self.__row_format += u' {:<' + str(width) + u'} │'
 
-        # Create separator format. E.g: '{:-<10}'
-        self.sep_format = '|'
+        # Create top line separator format
+        self.__top_format = u'┌'
         for width in colum_width:
-            self.sep_format += '-{:-<' + str(width) + '}-|'
+            self.__top_format += u'─{:─<' + str(width) + u'}─┬'
+        self.__top_format = self.__top_format[:-1] + u'┐'
 
-    def get_row(self, *colums):
+        # Create line separator format
+        self.__sep_format = u'├'
+        for width in colum_width:
+            self.__sep_format += u'─{:─<' + str(width) + u'}─┼'
+        self.__sep_format = self.__sep_format[:-1] + u'┤'
+
+        # Create bottom line separator format
+        self.__bot_format = u'└'
+        for width in colum_width:
+            self.__bot_format += u'─{:─<' + str(width) + u'}─┴'
+        self.__bot_format = self.__bot_format[:-1] + u'┘'
+
+    def row(self, *colums):
         '''Get formated row with X arguments (num of colums)'''
-        return self.row_format.format(*colums)
+        if self.__first_row:
+            prefix = self.__sep_first()
+            self.__first_row = False
+        else:
+            prefix = self.__sep_normal()
 
-    def get_sep(self):
-        '''Get empty separator row'''
-        return self.sep_format.format(*['' for i in range(self.rows)])
+        return prefix + '\n' + self.__row_format.format(*colums)
+
+    def end(self):
+        '''Close table by drawing a final bottom line'''
+        return self.__bot_format.format(*[u'' for i in range(self.rows)])
 
 
 ############################################################
@@ -272,13 +319,22 @@ def to_json(string):
     return data
 
 
-def fdec(number, length, places, alt_form):
+def percent(total, part, default):
+    '''Calculate percent with default value in case part is zero'''
+    if part == 0:
+        return default
+
+    return 100 * total / part
+
+
+def fdec(number, length, places, settings, colorize):
     '''
     Custom decimal format wrapper
     number:   the decinaml number to format
     length:   total length including dot and dec places
     places:   how many decimal places to show
-    alt_form: Altermative number format
+    settings: Settings
+    colorize: Colorize positive vs. negative numbers
     returns string
     '''
     if not isinstance(number, Decimal):
@@ -297,7 +353,7 @@ def fdec(number, length, places, alt_form):
     #   2.30
     #   2.31432
     # 143.0001
-    if places > 0 and alt_form:
+    if places > 0 and settings['format']:
         fnumber = fnumber.rstrip('0')
         fnumber = fnumber.split('.')
         while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
@@ -307,7 +363,11 @@ def fdec(number, length, places, alt_form):
 
         fnumber = fnumber[0] + '.' + fnumber[1]
 
-    # Return right-aligned string
+    if colorize and settings['color']:
+        clr = Color(settings['color'])
+        if number < 0:
+            return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
+        return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
     return ('{:>' + str(length) + '}').format(fnumber)
 
 
@@ -384,19 +444,33 @@ def get_trades(settings):
 
 def print_stats(currencies, trades, settings):
     '''Print trading stats in a nice table'''
-    total_win = Decimal('0.0')
 
-    # Initialize colors
-    clr = Color(settings['color'])
+    # Total accumulated values
+    totals = {
+        'invest': Decimal('0.0'),
+        'wealth': Decimal('0.0'),
+        'win':    Decimal('0.0'),
+    }
+
+    # Row definition
+    rows = [
+        {'width': 13, 'head': 'COIN'},
+        {'width': 10, 'head': 'BUY DATE'},
+        {'width': 13, 'head': 'BUY PRICE/c'},
+        {'width': 13, 'head': 'NOW PRICE/c'},
+        {'width': 15, 'head': 'AMOUNT'},
+        {'width': 10, 'head': 'INVEST'},
+        {'width': 10, 'head': 'WEALTH'},
+        {'width': 12, 'head': 'WIN / LOSS'},
+        {'width':  7, 'head': 'PERCENT'}
+    ]
 
     # Initialize the table
-    tbl = Table(7)
-    tbl.set_col_widths(17, 10, 15, 13, 13, 10, 12)
+    tbl = Table(len(rows))
+    tbl.set_col_widths(*[x['width'] for x in rows])
 
     # Print headline
-    print(tbl.get_row('coin', 'buy date', 'amount', 'buy price', 'now price',
-                      'percentage', 'win / loss'))
-    print(tbl.get_sep())
+    print(tbl.row(*[x['head'] for x in rows]))
 
     for currency in currencies:
 
@@ -417,49 +491,43 @@ def print_stats(currencies, trades, settings):
                     buy_price = Decimal(str(trade.get('price', '0.0')))
                     now_price = Decimal(str(currency['price_usd']))
 
-                    # Calculate if was win or loss
-                    win = (now_price * amount) - (buy_price * amount)
-
-                    # Calculate percentage of win/loss
-                    if buy_price != 0:
-                        percentage = 100 * now_price / buy_price
-                    else:
-                        percentage = 0
-
-                    # Add to overall win/loss
-                    total_win += win
-
-                    # Decide on display color
-                    if percentage < 100:
-                        clr_pre = clr.red()
-                        clr_pst = clr.reset()
-                    else:
-                        clr_pre = clr.green()
-                        clr_pst = clr.reset()
+                    # Calculate invest, own and win
+                    inv = buy_price * amount
+                    own = now_price * amount
+                    win = own - inv
 
                     # Print current row
-                    print(tbl.get_row(
+                    print(tbl.row(
                         name,
                         date,
-                        fdec(amount, 15, 8, settings['format']),
-                        fdec(buy_price, 13, 6, settings['format']),
-                        fdec(now_price, 13, 6, settings['format']),
-                        fdec(percentage, 10, 1, settings['format']),
-                        clr_pre + fdec(win, 12, 2, settings['format']) + clr_pst
+                        fdec(buy_price, rows[2]['width'], 6, settings, False),
+                        fdec(now_price, rows[3]['width'], 6, settings, False),
+                        fdec(amount, rows[4]['width'], 8, settings, False),
+                        fdec(inv, rows[5]['width'], 2, settings, False),
+                        fdec(own, rows[6]['width'], 2, settings, False),
+                        fdec(win, rows[7]['width'], 2, settings, True),
+                        fdec(percent(now_price, buy_price, 0), rows[8]['width'], 1, settings, False)
                     ))
 
-                # Print separater after each different curreny
-                print(tbl.get_sep())
+                    # Add accumulated values
+                    totals['invest'] += inv
+                    totals['wealth'] += own
+                    totals['win'] += win
 
     # Print overall summary
-    if settings['color'] and total_win < 0:
-        print(tbl.get_row('TOTAL', '', '', '', '', '',
-                          clr.red() + fdec(total_win, 12, 2, settings['format']) + clr.reset()))
-    elif settings['color'] and total_win >= 0:
-        print(tbl.get_row('TOTAL', '', '', '', '', '',
-                          clr.green() + fdec(total_win, 12, 2, settings['format']) + clr.reset()))
-    else:
-        print(tbl.get_row('TOTAL', '', '', '', '', '', fdec(total_win, 12, 2, settings['format'])))
+    print(tbl.row(
+        'TOTAL',
+        '',
+        '',
+        '',
+        '',
+        fdec(totals['invest'], rows[5]['width'], 2, settings, False),
+        fdec(totals['wealth'], rows[6]['width'], 2, settings, False),
+        fdec(totals['win'], rows[7]['width'], 2, settings, True),
+        fdec(percent(totals['wealth'], totals['invest'], 0), rows[8]['width'], 1, settings, False)
+    ))
+    # Close the table
+    print(tbl.end())
 
 
 def bootstrap():
