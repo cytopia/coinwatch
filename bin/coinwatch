@@ -614,7 +614,8 @@ def print_stats(currencies, trades, settings):
                     values['invest'] = format_column('invest', invest, settings)
                     values['wealth'] = format_column('wealth', wealth, settings)
                     values['profit'] = format_column('profit', profit, settings)
-                    values['percent'] = format_column('percent', percent(nowprice, buyprice, 0), settings)
+                    values['percent'] = format_column('percent',
+                                                      percent(nowprice, buyprice, 0), settings)
 
                     # Only add column values that are wanted for display
                     row = []
@@ -637,7 +638,8 @@ def print_stats(currencies, trades, settings):
     values['invest'] = format_column('invest', totals['invest'], settings)
     values['wealth'] = format_column('wealth', totals['wealth'], settings)
     values['profit'] = format_column('profit', totals['profit'], settings)
-    values['percent'] = format_column('percent', percent(totals['wealth'], totals['invest'], 0), settings)
+    values['percent'] = format_column('percent',
+                                      percent(totals['wealth'], totals['invest'], 0), settings)
 
     # Set colums to be displayed
     row = []
