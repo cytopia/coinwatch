@@ -155,7 +155,6 @@ Currently supported remote API's are:
 
 `coinwatch` itself requires `PyYaml`. Apart fromt that, only one of the following Python versions is required:
 
-* Python 2.6 (requires `future` for Python 3 compat)
 * Python 2.7 (requires `future` for Python 3 compat)
 * Python 3.2
 * Python 3.3
