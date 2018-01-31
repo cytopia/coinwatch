@@ -25,14 +25,23 @@ coinwatch
 # Specify different profile/config
 coinwatch -c ~/path/to/conf.yml
 
-# Output in text mode
-coinwatch -t
+# Disable colorized output
+coinwatch -n
+
+# Different table border
+coinwatch -t ascii
+coinwatch -t thin
+coinwatch -t thick
+
+# Different columns and order
+coinwatch -r "coin buyprice nowprice wealth invest profit"
+coinwatch -r "coin date nowprice wealth profit percent"
 
 # Alternative number format
-coinwatch -f
+coinwatch -h
 
 # Text output wrapped in watch
-watch --interval=10 'coinwatch -t'
+watch --interval=10 'coinwatch -n'
 ```
 
 
@@ -108,40 +117,56 @@ trades:
 
 
 ## Options
-This shows the output of `coinwawtch -h`.
+This shows the output of `coinwawtch --help`.
 ```bash
-Usage: coinwatch [-vhctf]
-       coinwatch [--version] [--help] [--config <path>] [--text] [--format]
+Usage: coinwatch [-crtnhv]
+       coinwatch [--help]
+       coinwatch [--version]
 
 coinwatch is a low-dependency python[23] client to keep track of your crypto trades
 and easily lets you see if you are winning or losing.
 
 OPTIONS:
-    -v, --version  Show version and exit
-    -h, --help     Show this help dialog and exit
-    -c, --config   Specify path of an alternative configuration file.
-    -t, --text     Do not display colors. Text mode is designed to use the
-                   output of this program as input for other programs. Such as:
-                   $ watch --interval=10 'coinwatch -t'
-    -f, --format   Alternative format for displaying large numbers.
-                   Try it out, might be more readable.
+  -c, --config   Specify path of an alternative configuration file.
+                 Examples:
+                   -c path/to/conf.yml
+  -r, --row      Specify the order and columns to use in a row.
+                 In case you dont need all columns to be shown or want
+                 a different order of columns, use this argument to specify it.
+                 Examples:
+                   -r "coin date profit percent"
+                   -r "coin buyprice nowprice amount wealth"
+                 Default:
+                   -r "coin date buyprice nowprice amount invest wealth profit percent"
+  -t, --table    Specify different table border.
+                 Available values: 'thin', 'thick' and 'ascii'.
+                 The default is 'thin'.
+                 In case you need to process the output of this tool use 'ascii'.
+                 Examples:
+                   -t thin
+                   -t thick
+                   -t ascii
+  -n, --nocolor  Disable shell colors. This is useful if you want to further
+                 process the output of this program.
+  -h, --human    Alternative human readable number format.
+  -v, --verbose  Be verbose.
 
 NOTE:
-    No financial aid, support or any other recommendation is provided.
-    Trade at your own risk! And only invest what you can effort to lose.
+  No financial aid, support or any other recommendation is provided.
+  Trade at your own risk! And only invest what you can effort to lose.
 
 API:
-    Currently supported remote price and coin APIs are:
-      - coinmarketcap
+  Currently supported remote price and coin APIs are:
+    - coinmarketcap
 
 CONFIGURATION:
-    When starting coinwatch for the first time a base configuration file will be
-    created in ~/.config/coinwatch/config.yml.
-    You should edit this file and add your trades:
-      - What currency
-      - When bought
-      - How much bought
-      - Price for 1 coin of currency at that date
+  When starting coinwatch for the first time a base configuration file will be
+  created in ~/.config/coinwatch/config.yml.
+  You should edit this file and add your trades:
+    - What currency
+    - When bought
+    - How much bought
+    - Price for 1 coin of currency at that date
 ```
 
 
