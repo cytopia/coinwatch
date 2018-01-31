@@ -46,7 +46,7 @@ import yaml
 try:
     reload(sys)
     sys.setdefaultencoding('utf8')
-except:
+except NotImplementedError:
     pass
 
 
