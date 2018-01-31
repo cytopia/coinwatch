@@ -5,13 +5,13 @@
 
 trades:
   bitcoin:
-    - amount: 3.1
-      price: 17235.23
-      date: 2017-04-30
-    - amount: 1
+    - amount: 1.12
+      price: 1235.23
+      date: 2016-04-30
+    - amount: 0.3
       price: 10010.50
       date: 2017-08-31
-    - amount: 5.323
+    - amount: 0.023
       price: 11100.52
       date: 2017-12-05
     - amount: 0.001
@@ -25,3 +25,10 @@ trades:
     - amount: 100
       price: 2.15
       date: 2017-11-17
+  tron:
+    - amount: 4000.234
+      price: 0.0449101
+      date: 2017-08-30
+    - amount: 1821.15858466
+      price: 0.0549101
+      date: 2018-01-30
