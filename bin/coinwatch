@@ -23,6 +23,7 @@ Currently supported API's are:
 
 # Make it work for python2 and python3
 from __future__ import print_function
+from __future__ import unicode_literals
 
 try:
     # For Python 3.0 and later
