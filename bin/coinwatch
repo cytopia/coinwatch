@@ -167,17 +167,17 @@ class Table(object):
         'ver-sep': '|'
     }
     __sym_ext = {
-        'top-lft': u'┌',
-        'top-rgt': u'┐',
-        'top-cen': u'┬',
-        'mid-lft': u'├',
-        'mid-rgt': u'┤',
-        'mid-cen': u'┼',
-        'bot-lft': u'└',
-        'bot-rgt': u'┘',
-        'bot-cen': u'┴',
-        'hor-sep': u'─',
-        'ver-sep': u'│'
+        'top-lft': '┌',
+        'top-rgt': '┐',
+        'top-cen': '┬',
+        'mid-lft': '├',
+        'mid-rgt': '┤',
+        'mid-cen': '┼',
+        'bot-lft': '└',
+        'bot-rgt': '┘',
+        'bot-cen': '┴',
+        'hor-sep': '─',
+        'ver-sep': '│'
     }
     __sym = dict()
 
@@ -211,29 +211,29 @@ class Table(object):
         # Create row format
         self.__row_format = self.__sym['ver-sep']
         for width in colum_width:
-            self.__row_format += u' {:<' + str(width) + u'} ' + self.__sym['ver-sep']
+            self.__row_format += ' {:<' + str(width) + '} ' + self.__sym['ver-sep']
 
         # Create top line separator format
         self.__top_format = self.__sym['top-lft']
         for width in colum_width:
-            self.__top_format += u'' + self.__sym['hor-sep'] \
-                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
+            self.__top_format += self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + '}' \
                                  + self.__sym['hor-sep'] + self.__sym['top-cen']
         self.__top_format = self.__top_format[:-1] + self.__sym['top-rgt']
 
         # Create line separator format
         self.__sep_format = self.__sym['mid-lft']
         for width in colum_width:
-            self.__sep_format += u'' + self.__sym['hor-sep'] \
-                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
+            self.__sep_format += self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + '}' \
                                  + self.__sym['hor-sep'] + self.__sym['mid-cen']
         self.__sep_format = self.__sep_format[:-1] + self.__sym['mid-rgt']
 
         # Create bottom line separator format
         self.__bot_format = self.__sym['bot-lft']
         for width in colum_width:
-            self.__bot_format += u'' + self.__sym['hor-sep'] \
-                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
+            self.__bot_format += self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + '}' \
                                  + self.__sym['hor-sep'] + self.__sym['bot-cen']
         self.__bot_format = self.__bot_format[:-1] + self.__sym['bot-rgt']
 
@@ -243,15 +243,15 @@ class Table(object):
 
     def sep_first(self):
         '''Get first row separator row'''
-        return self.__top_format.format(*[u'' for i in range(self.rows)])
+        return self.__top_format.format(*['' for i in range(self.rows)])
 
     def sep(self):
         '''Get row separator row'''
-        return self.__sep_format.format(*[u'' for i in range(self.rows)])
+        return self.__sep_format.format(*['' for i in range(self.rows)])
 
     def sep_last(self):
         '''Get last row separator row'''
-        return self.__bot_format.format(*[u'' for i in range(self.rows)])
+        return self.__bot_format.format(*['' for i in range(self.rows)])
 
 
 ############################################################
