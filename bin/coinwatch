@@ -44,7 +44,7 @@ import yaml
 
 # Force Python2 to use utf8
 try:
-    reload(sys) #noqa
+    reload(sys) # noqa
     sys.setdefaultencoding('utf8')
 except Exception:
     pass
