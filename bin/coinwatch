@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
@@ -30,8 +30,6 @@ try:
     from urllib.error import URLError, HTTPError
 except ImportError:
     # Fall back to Python 2's urllib2
-    # Yes I know, shebang says Python3, however it also works on Python2
-    # except wrapped in watch with no text mode (some weired extended ascii errors)
     from urllib2 import Request, urlopen
     from urllib2 import URLError, HTTPError
 
@@ -43,6 +41,13 @@ import getopt
 import sys
 import json
 import yaml
+
+# Force Python2 to use utf8
+try:
+    reload(sys)
+    sys.setdefaultencoding('utf8')
+except:
+    pass
 
 
 ############################################################
@@ -157,8 +162,8 @@ class Table(object):
         'bot-lft': '|',
         'bot-rgt': '|',
         'bot-cen': '-',
-        'hor-sep' : '-',
-        'ver-sep' : '|'
+        'hor-sep': '-',
+        'ver-sep': '|'
     }
     __sym_ext = {
         'top-lft': u'┌',
@@ -170,8 +175,8 @@ class Table(object):
         'bot-lft': u'└',
         'bot-rgt': u'┘',
         'bot-cen': u'┴',
-        'hor-sep' : u'─',
-        'ver-sep' : u'│'
+        'hor-sep': u'─',
+        'ver-sep': u'│'
     }
     __sym = dict()
 
@@ -212,7 +217,7 @@ class Table(object):
         self.__top_format = self.__sym['top-lft']
         for width in colum_width:
             self.__top_format += u'' + self.__sym['hor-sep'] \
-                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
                                  + self.__sym['hor-sep'] + self.__sym['top-cen']
         self.__top_format = self.__top_format[:-1] + self.__sym['top-rgt']
 
@@ -220,7 +225,7 @@ class Table(object):
         self.__sep_format = self.__sym['mid-lft']
         for width in colum_width:
             self.__sep_format += u'' + self.__sym['hor-sep'] \
-                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
                                  + self.__sym['hor-sep'] + self.__sym['mid-cen']
         self.__sep_format = self.__sep_format[:-1] + self.__sym['mid-rgt']
 
@@ -228,7 +233,7 @@ class Table(object):
         self.__bot_format = self.__sym['bot-lft']
         for width in colum_width:
             self.__bot_format += u'' + self.__sym['hor-sep'] \
-                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + u'{:' + self.__sym['hor-sep'] + u'<' + str(width) + u'}' \
                                  + self.__sym['hor-sep'] + self.__sym['bot-cen']
         self.__bot_format = self.__bot_format[:-1] + self.__sym['bot-rgt']
 
