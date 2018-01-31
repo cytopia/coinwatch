@@ -432,39 +432,54 @@ def print_version():
 
 def print_help():
     '''Show program help'''
-    print('''Usage: %s [-vhctf]
-       %s [--version] [--help] [--config <path>] [--text] [--format]
+    print('''Usage: %s [-crtnhv]
+       %s [--help]
+       %s [--version]
 
 %s is a low-dependency python[23] client to keep track of your crypto trades
 and easily let's you see if you are winning or losing.
 
 OPTIONS:
-    -v, --version  Show version and exit
-    -h, --help     Show this help dialog and exit
-    -c, --config   Specify path of an alternative configuration file.
-    -t, --text     Do not display colors or fancy ascii chars. Text mode is
-                   designed to use the output of this program as input for
-                   other programs. Such as:
-                     $ watch --interval=10 'coinwatch -t'
-    -f, --format   Alternative format for displaying large numbers.
-                   Try it out, might be more readable.
+  -c, --config   Specify path of an alternative configuration file.
+                 Examples:
+                   -c path/to/conf.yml
+  -r, --row      Specify the order and columns to use in a row.
+                 In case you dont need all columns to be shown or want
+                 a different order of columns, use this argument to specify it.
+                 Examples:
+                   -r "coin date profit percent"
+                   -r "coin buyprice nowprice amount wealth"
+                 Default:
+                   -r "coin date buyprice nowprice amount invest wealth profit percent"
+  -t, --table    Specify different table border.
+                 Available values: 'thin', 'thick' and 'ascii'.
+                 The default is 'thin'.
+                 In case you need to process the output of this tool use 'ascii'.
+                 Examples:
+                   -t thin
+                   -t thick
+                   -t ascii
+  -n, --nocolor  Disable shell colors. This is useful if you want to further
+                 process the output of this program.
+  -h, --human    Alternative human readable number format.
+  -v, --verbose  Be verbose.
 
 NOTE:
-    No financial aid, support or any other recommendation is provided.
-    Trade at your own risk! And only invest what you can effort to lose.
+  No financial aid, support or any other recommendation is provided.
+  Trade at your own risk! And only invest what you can effort to lose.
 
 API:
-    Currently supported remote price and coin API's are:
-      - coinmarketcap
+  Currently supported remote price and coin API's are:
+    - coinmarketcap
 
 CONFIGURATION:
-    When starting %s for the first time a base configuration file will be
-    created in ~/.config/%s/config.yml.
-    You should edit this file and add your trades:
-      - What currency
-      - When bought
-      - How much bought
-      - Price for 1 coin of currency at that date''' % (NAME, NAME, NAME, NAME, NAME))
+  When starting %s for the first time a base configuration file will be
+  created in ~/.config/%s/config.yml.
+  You should edit this file and add your trades:
+    - What currency
+    - When bought
+    - How much bought
+    - Price for 1 coin of currency at that date''' % (NAME, NAME, NAME, NAME, NAME, NAME))
 
 
 def fdec(number, length, places, settings, colorize):
@@ -493,7 +508,7 @@ def fdec(number, length, places, settings, colorize):
     #   2.30
     #   2.31432
     # 143.0001
-    if places > 0 and settings['format']:
+    if places > 0 and settings['human']:
         fnumber = fnumber.rstrip('0')
         fnumber = fnumber.split('.')
         while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
@@ -503,8 +518,8 @@ def fdec(number, length, places, settings, colorize):
 
         fnumber = fnumber[0] + '.' + fnumber[1]
 
-    if colorize and not settings['text']:
-        clr = Color(not settings['text'])
+    if colorize and settings['color']:
+        clr = Color(settings['color'])
         if number < 0:
             return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
         return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
@@ -563,10 +578,10 @@ def print_stats(currencies, trades, settings):
     }
 
     # Get columns to display
-    display_columns = ROW_DISPLAY
+    display_columns = settings['rows']
 
     # Initialize the table
-    tbl = Table(len(ROW_DISPLAY), 'thick')
+    tbl = Table(len(display_columns), settings['table'])
     tbl.set_col_widths(*[ROW_SETTINGS[x]['width'] for x in display_columns])
 
     # Print headline
@@ -670,7 +685,16 @@ def parse_args(argv, settings):
 
     # Define command line options
     try:
-        opts, argv = getopt.getopt(argv, 'vhc:tf', ['version', 'help', 'config=', 'text', 'format'])
+        opts, argv = getopt.getopt(argv, 'c:r:t:nhv', [
+            'version',
+            'help',
+            'config=',
+            'row=',
+            'table=',
+            'nocolor',
+            'human',
+            'verbose'
+        ])
     except getopt.GetoptError as err:
         logerr('[ERR] ', err)
         logerr('Type --help for help')
@@ -678,21 +702,44 @@ def parse_args(argv, settings):
 
     # Get command line options
     for opt, arg in opts:
-        if opt in ('-h', '--help'):
+        # Show help screen
+        if opt == '--help':
             print_help()
             sys.exit()
-        elif opt in ('-v', '--version'):
+        # Show version
+        elif opt == '--version':
             print_version()
             sys.exit()
-        elif opt in ('-t', '--text'):
-            settings['text'] = True
-        elif opt in ('-f', '--format'):
-            settings['format'] = True
+        # Custom rows to display in the given order
+        elif opt in ('-r', '--row'):
+            for col in arg.split(' '):
+                if col not in ROW_DISPLAY:
+                    logerr('[ERR] Invalid colum name: \'' + col + '\'')
+                    logerr('[ERR] Valid names: ' + ', '.join(ROW_DISPLAY))
+                    sys.exit(2)
+            settings['rows'] = arg.split()
+        # Choose table border
+        elif opt in ('-t', '--table'):
+            if arg not in('thin', 'thick', 'ascii'):
+                logerr('[ERR] Invalid table border style: \'' + arg + '\'')
+                logerr('[ERR] Allowed values: thin, thick and ascii')
+                sys.exit(2)
+            settings['table'] = arg
+        # Use different config file
         elif opt in ('-c', '--config'):
             if not os.path.isfile(arg):
                 logerr('[ERR] ' + opt + ' specified config does not exist: ' + arg)
                 sys.exit(2)
             settings['config'] = arg
+        # Disable color
+        elif opt in ('-n', '--nocolor'):
+            settings['color'] = False
+        # Enable human readable number format
+        elif opt in ('-h', '--human'):
+            settings['human'] = True
+        # Verbose output
+        elif opt in ('-v', '--verbose'):
+            settings['verbose'] = True
 
     return settings
 
@@ -706,10 +753,14 @@ def main(argv):
 
     # Default settings if not otherwise specified via cmd args
     settings = {
-        'text': False,
-        'config': None,
-        'format': False
+        'config':  None,
+        'color':   True,
+        'human':   False,
+        'verbose': False,
+        'table':   'thin',
+        'rows':    ROW_DISPLAY
     }
+
     # Overwrite settings
     settings = parse_args(argv, settings)
 
