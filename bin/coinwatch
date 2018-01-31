@@ -191,7 +191,6 @@ class Table(object):
         # Set colum width with default widths
         self.set_col_widths()
 
-
     def set_col_widths(self, *widths):
         '''
         Set colum widths.
