@@ -91,7 +91,6 @@ ROW_DISPLAY = [
 ]
 
 
-
 EXAMPLE_CONFIG = '''
 ---
 #
@@ -234,7 +233,6 @@ class Table(object):
     # Actual chosen border symbols (see __init__)
     __sym = dict()
 
-
     def __init__(self, rows, border):
         '''Defines the table with number of rows and border style'''
         # Store rows
@@ -250,7 +248,6 @@ class Table(object):
 
         # Set colum width with default widths
         self.set_col_widths()
-
 
     def __set_row_formats(self, *widths):
         '''
@@ -275,7 +272,7 @@ class Table(object):
                    '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
                    sym['hor-sep'] + sym['top-cen']
 
-        self.__top_format = row[:-1] + sym['top-rgt'] # Adjust last char
+        self.__top_format = row[:-1] + sym['top-rgt']  # Adjust last char
 
         # Create normal line separator format (between rows)
         row = sym['mid-lft']
@@ -284,7 +281,7 @@ class Table(object):
                    '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
                    sym['hor-sep'] + sym['mid-cen']
 
-        self.__sep_format = row[:-1] + sym['mid-rgt'] # Adjust last char
+        self.__sep_format = row[:-1] + sym['mid-rgt']  # Adjust last char
 
         # Create last line separator format (closes table)
         row = sym['bot-lft']
@@ -293,8 +290,7 @@ class Table(object):
                    '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
                    sym['hor-sep'] + sym['bot-cen']
 
-        self.__bot_format = row[:-1] + sym['bot-rgt'] # Adjust last char
-
+        self.__bot_format = row[:-1] + sym['bot-rgt']  # Adjust last char
 
     def set_col_widths(self, *widths):
         '''
@@ -315,21 +311,17 @@ class Table(object):
         # Re-build row-formats on every width reset
         self.__set_row_formats(*widths)
 
-
     def row(self, *colums):
         '''Get formated row with X arguments (num of colums)'''
         return self.__row_format.format(*colums)
-
 
     def sep_first(self):
         '''Get first row separator row'''
         return self.__top_format.format(*['' for i in range(self.__rows)])
 
-
     def sep(self):
         '''Get row separator row'''
         return self.__sep_format.format(*['' for i in range(self.__rows)])
-
 
     def sep_last(self):
         '''Get last row separator row'''
