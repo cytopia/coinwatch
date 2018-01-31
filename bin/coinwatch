@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
 # The MIT License (MIT)
@@ -30,6 +30,8 @@ try:
     from urllib.error import URLError, HTTPError
 except ImportError:
     # Fall back to Python 2's urllib2
+    # Yes I know, shebang says Python3, however it also works on Python2
+    # except wrapped in watch with no text mode (some weired extended ascii errors)
     from urllib2 import Request, urlopen
     from urllib2 import URLError, HTTPError
 
@@ -136,9 +138,6 @@ class Color(object):
 class Table(object):
     '''Custom command line table drawer class'''
 
-    # is this the first row (has different top line)
-    __first_row = True
-
     # Default column width if not set
     __def_width = 10
     # Row formatter used by format()
@@ -148,7 +147,20 @@ class Table(object):
     __bot_format = u''
 
     # Create table out of these chars
-    __sym = {
+    __sym_text = {
+        'top-lft': '|',
+        'top-rgt': '|',
+        'top-cen': '-',
+        'mid-lft': '|',
+        'mid-rgt': '|',
+        'mid-cen': '|',
+        'bot-lft': '|',
+        'bot-rgt': '|',
+        'bot-cen': '-',
+        'hor-sep' : '-',
+        'ver-sep' : '|'
+    }
+    __sym_ext = {
         'top-lft': u'┌',
         'top-rgt': u'┐',
         'top-cen': u'┬',
@@ -157,24 +169,23 @@ class Table(object):
         'mid-cen': u'┼',
         'bot-lft': u'└',
         'bot-rgt': u'┘',
-        'bot-cen': u'┼',
+        'bot-cen': u'┴',
         'hor-sep' : u'─',
         'ver-sep' : u'│'
     }
+    __sym = dict()
 
-    def __init__(self, rows):
+    def __init__(self, rows, textmode):
         '''Defines the table with number of rows'''
         self.rows = rows
+        # Set table style
+        if textmode:
+            self.__sym = self.__sym_text
+        else:
+            self.__sym = self.__sym_ext
         # Set colum width with default widths
         self.set_col_widths()
 
-    def __sep_first(self):
-        '''Get first row separator row'''
-        return self.__top_format.format(*[u'' for i in range(self.rows)])
-
-    def __sep_normal(self):
-        '''Get row separator row'''
-        return self.__sep_format.format(*[u'' for i in range(self.rows)])
 
     def set_col_widths(self, *widths):
         '''
@@ -195,38 +206,46 @@ class Table(object):
         # Create row format
         self.__row_format = self.__sym['ver-sep']
         for width in colum_width:
-            self.__row_format += u' {:<' + str(width) + u'} │'
+            self.__row_format += u' {:<' + str(width) + u'} ' + self.__sym['ver-sep']
 
         # Create top line separator format
-        self.__top_format = u'┌'
+        self.__top_format = self.__sym['top-lft']
         for width in colum_width:
-            self.__top_format += u'─{:─<' + str(width) + u'}─┬'
-        self.__top_format = self.__top_format[:-1] + u'┐'
+            self.__top_format += u'' + self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + self.__sym['hor-sep'] + self.__sym['top-cen']
+        self.__top_format = self.__top_format[:-1] + self.__sym['top-rgt']
 
         # Create line separator format
-        self.__sep_format = u'├'
+        self.__sep_format = self.__sym['mid-lft']
         for width in colum_width:
-            self.__sep_format += u'─{:─<' + str(width) + u'}─┼'
-        self.__sep_format = self.__sep_format[:-1] + u'┤'
+            self.__sep_format += u'' + self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + self.__sym['hor-sep'] + self.__sym['mid-cen']
+        self.__sep_format = self.__sep_format[:-1] + self.__sym['mid-rgt']
 
         # Create bottom line separator format
-        self.__bot_format = u'└'
+        self.__bot_format = self.__sym['bot-lft']
         for width in colum_width:
-            self.__bot_format += u'─{:─<' + str(width) + u'}─┴'
-        self.__bot_format = self.__bot_format[:-1] + u'┘'
+            self.__bot_format += u'' + self.__sym['hor-sep'] \
+                                 + '{:' + self.__sym['hor-sep'] + '<' + str(width) + u'}' \
+                                 + self.__sym['hor-sep'] + self.__sym['bot-cen']
+        self.__bot_format = self.__bot_format[:-1] + self.__sym['bot-rgt']
 
     def row(self, *colums):
         '''Get formated row with X arguments (num of colums)'''
-        if self.__first_row:
-            prefix = self.__sep_first()
-            self.__first_row = False
-        else:
-            prefix = self.__sep_normal()
+        return self.__row_format.format(*colums)
 
-        return prefix + '\n' + self.__row_format.format(*colums)
+    def sep_first(self):
+        '''Get first row separator row'''
+        return self.__top_format.format(*[u'' for i in range(self.rows)])
 
-    def end(self):
-        '''Close table by drawing a final bottom line'''
+    def sep(self):
+        '''Get row separator row'''
+        return self.__sep_format.format(*[u'' for i in range(self.rows)])
+
+    def sep_last(self):
+        '''Get last row separator row'''
         return self.__bot_format.format(*[u'' for i in range(self.rows)])
 
 
@@ -344,9 +363,10 @@ OPTIONS:
     -v, --version  Show version and exit
     -h, --help     Show this help dialog and exit
     -c, --config   Specify path of an alternative configuration file.
-    -t, --text     Do not display colors. Text mode is designed to use the
-                   output of this program as input for other programs. Such as:
-                   $ watch --interval=10 'coinwatch -t'
+    -t, --text     Do not display colors or fancy ascii chars. Text mode is
+                   designed to use the output of this program as input for
+                   other programs. Such as:
+                     $ watch --interval=10 'coinwatch -t'
     -f, --format   Alternative format for displaying large numbers.
                    Try it out, might be more readable.
 
@@ -404,8 +424,8 @@ def fdec(number, length, places, settings, colorize):
 
         fnumber = fnumber[0] + '.' + fnumber[1]
 
-    if colorize and settings['color']:
-        clr = Color(settings['color'])
+    if colorize and not settings['text']:
+        clr = Color(not settings['text'])
         if number < 0:
             return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
         return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
@@ -449,8 +469,8 @@ def print_stats(currencies, trades, settings):
     rows = [
         {'width': 13, 'head': 'COIN'},
         {'width': 10, 'head': 'BUY DATE'},
-        {'width': 13, 'head': 'BUY PRICE/c'},
-        {'width': 13, 'head': 'NOW PRICE/c'},
+        {'width': 14, 'head': 'BUY PRICE/c'},
+        {'width': 14, 'head': 'NOW PRICE/c'},
         {'width': 15, 'head': 'AMOUNT'},
         {'width': 10, 'head': 'INVEST'},
         {'width': 10, 'head': 'WEALTH'},
@@ -459,11 +479,13 @@ def print_stats(currencies, trades, settings):
     ]
 
     # Initialize the table
-    tbl = Table(len(rows))
+    tbl = Table(len(rows), settings['text'])
     tbl.set_col_widths(*[x['width'] for x in rows])
 
     # Print headline
+    print(tbl.sep_first())
     print(tbl.row(*[x['head'] for x in rows]))
+    print(tbl.sep())
 
     for currency in currencies:
 
@@ -507,6 +529,9 @@ def print_stats(currencies, trades, settings):
                     totals['wealth'] += own
                     totals['win'] += win
 
+                # Separate only different coins by row separator
+                print(tbl.sep())
+
     # Print overall summary
     print(tbl.row(
         'TOTAL',
@@ -520,7 +545,7 @@ def print_stats(currencies, trades, settings):
         fdec(percent(totals['wealth'], totals['invest'], 0), rows[8]['width'], 1, settings, False)
     ))
     # Close the table
-    print(tbl.end())
+    print(tbl.sep_last())
 
 
 def bootstrap():
@@ -557,7 +582,7 @@ def parse_args(argv, settings):
             print_version()
             sys.exit()
         elif opt in ('-t', '--text'):
-            settings['color'] = False
+            settings['text'] = True
         elif opt in ('-f', '--format'):
             settings['format'] = True
         elif opt in ('-c', '--config'):
@@ -578,7 +603,7 @@ def main(argv):
 
     # Default settings if not otherwise specified via cmd args
     settings = {
-        'color': True,
+        'text': False,
         'config': None,
         'format': False
     }
