@@ -28,6 +28,9 @@ coinwatch -c ~/path/to/conf.yml
 # Output in text mode
 coinwatch -t
 
+# Alternative number format
+coinwatch -f
+
 # Text output wrapped in watch
 watch --interval=10 'coinwatch -t'
 ```
@@ -36,10 +39,16 @@ watch --interval=10 'coinwatch -t'
 ## Screenshots
 
 The example shows the usage of an alternative configuration file.
-![normal](screenshot/normal.jpg)
+![normal](screenshot/screen-01.png)
+
+The example shows an alternative number format
+![normal](screenshot/screen-03.png)
+
+The example shows how it looks in text mode
+![normal](screenshot/screen-02.png)
 
 The example shows coinwatch wrapped into `watch` and refresh every 10 seconds.
-![watcher](screenshot/watcher.jpg)
+![watcher](screenshot/screen-04.png)
 
 
 ## Features
@@ -146,7 +155,6 @@ Currently supported remote API's are:
 
 `coinwatch` itself requires `PyYaml`. Apart fromt that, only one of the following Python versions is required:
 
-* Python 2.6 (requires `future` for Python 3 compat)
 * Python 2.7 (requires `future` for Python 3 compat)
 * Python 3.2
 * Python 3.3

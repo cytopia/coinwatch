@@ -15,7 +15,6 @@ language: python
 ### Python Build Matrix
 ###
 python:
-  - "2.6"
   - "2.7"
   - "3.2"
   - "3.3"
@@ -63,3 +62,5 @@ script:
   - pep8 --max-line-length=100 bin/coinwatch
   #- if pylint --version >/dev/null 2>&1; then pylint bin/coinwatch; fi
   - if flake8 --version >/dev/null 2>&1; then flake8 --max-line-len=100 bin/coinwatch; fi
+  # Run
+  - ./bin/coinwatch -c example/config.yml
