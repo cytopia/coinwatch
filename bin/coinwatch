@@ -146,10 +146,10 @@ class Table(object):
     # Default column width if not set
     __def_width = 10
     # Row formatter used by format()
-    __row_format = u''
-    __sep_format = u''
-    __top_format = u''
-    __bot_format = u''
+    __row_format = None
+    __sep_format = None
+    __top_format = None
+    __bot_format = None
 
     # Create table out of these chars
     __sym_text = {
