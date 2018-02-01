@@ -93,8 +93,7 @@ ROW_DISPLAY = [
 ]
 
 
-EXAMPLE_CONFIG = '''
----
+EXAMPLE_CONFIG = '''---
 #
 # coinwatch config
 #
@@ -126,27 +125,27 @@ EXAMPLE_CONFIG = '''
 #     invest: how much money spent on all coins
 #     price:  price for one coin
 
-# Config file example:
-# --------------------
-# trades:
-#   bitcoin:
-#     # Options-1
-#     - amount:  5.323
-#       invest:  35432.23
-#       date:    2017-12-05
-#     # Options-2
-#     - amount:  0.001
-#       price:   110323.54
-#       date:    2018-01-27
-#     # Options-3
-#     - invest:  100
-#       price:   110323.54
-#       date:    2018-01-27
-#   ethereum:
-#     - amount:  20
-#       price:   1070
-#       date:    2017-12-05
-#   iota: []
+# Example config:
+# ---------------
+trades:
+  bitcoin:
+    # Options-1
+    - amount:  5.323
+      invest:  35432.23
+      date:    2017-12-05
+    # Options-2
+    - amount:  0.001
+      price:   110323.54
+      date:    2018-01-27
+    # Options-3
+    - invest:  100
+      price:   110323.54
+      date:    2018-01-27
+  ethereum:
+    - amount:  20
+      price:   1070
+      date:    2017-12-05
+  iota: []
 '''
 
 
