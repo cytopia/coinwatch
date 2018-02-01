@@ -3,20 +3,46 @@
 # coinwatch config
 # Remote API: https://api.coinmarketcap.com/v1/ticker/?limit=0
 
+# Config file description
+# -----------------------
+# trades:
+#   # CURRENCY_ID is found by looking up the 'id' key from
+#   # https://api.coinmarketcap.com/v1/ticker/?limit=0
+#   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
+#     - amount:   # <-- [decimal]     [1] How many coins for that currency were bought
+#       invest:   # <-- [decimal]     [1] How much money was spent on all coins
+#       price:    # <-- [decimal]     [1] Price for 1 coin on that date
+#       date:     # <-- [yyyy-mm-dd]  When was that bought
+#
+# [1] IMPORTANT: Only always specify two of 'amount', 'invest' and 'price'.
+#                The third value will always be calculated from the other two.
+#
+# [1] Trades can/must be configured in three different ways:
+# Option-1
+#     amount: how many coins bought
+#     invest: how much money spent on all coins
+# Option-2
+#     amount: how many coins bought
+#     price:  price for one coin
+# Option-3
+#     invest: how much money spent on all coins
+#     price:  price for one coin
+
 trades:
+  # bitcoin trades show all three different ways of specifying purchases.
   bitcoin:
-    - amount: 1.12
-      price: 1235.23
+    # Option-1: Invested 500.00$ and got 0.0425 coins
+    - invest: 500.00
+      amount: 0.0425
       date: 2016-04-30
-    - amount: 0.3
+    # Option-2: bought at 10,010.50 and bought 0.5 coins
+    - amount: 0.5
       price: 10010.50
       date: 2017-08-31
-    - amount: 0.023
-      price: 11100.52
+    # Option-3: invested 500.00$ at 11,043.12 price/coin
+    - invest: 500.00
+      price: 11043.12
       date: 2017-12-05
-    - amount: 0.001
-      price: 110323.54
-      date: 2018-01-27
   ethereum:
     - amount: 20
       price: 1070

@@ -80,26 +80,69 @@ trades:
   # CURRENCY_ID is found by looking up the 'id' key from
   # https://api.coinmarketcap.com/v1/ticker/?limit=0
   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
-    - amount:   # <-- [decimal]     How many coins for that currency were bought
-      price:    # <-- [decimal]     Price for 1 coin of that currency
+    - amount:   # <-- [decimal]     [1] How many coins for that currency were bought
+      invest:   # <-- [decimal]     [1] How much money in total was invested
+      price:    # <-- [decimal]     [1] Price for 1 coin of that currency
       date:     # <-- [yyyy-mm-dd]  When was that bought
 ```
 
+`[1]` `amount`, `invest` and `price` at the same time? Yes that's right there is duplication, however only always two of those three can be specified at the same time. This gives the possibility to record you trades in three different ways:
+
+#### Option-1: amount and invest
+How many coins did you buy and how much money in total did you spent on that?
+
+This option is most useful when having done a real purchase. Enter the total money spent and the coins received. That way you don't have to calculate any market fees or transaction fees yourself.
+```yml
+# Bought 0.4 coins
+# Total cost of that: 3742.35 $
+trades:
+  bitcoin:
+    - amount: 0.4
+      invest: 3742.35
+```
+#### Option-2: amount and price
+How many coins did you buy and how much did one coin cost?
+
+This option is most useful when doint dry-run trades - *What would have happened if*. Enter how many coins you had bought at what price per coin.
+```yml
+# Bought 0.4 coins
+# 1 Bitcoin had a price of: 9355.875 $
+trades:
+  bitcoin:
+    - amount: 0.4
+      price:  9355.875
+```
+#### Option-3: invest and price
+How much money in total did you spend and how much did one coin cost?
+
+This option is most useful when doint dry-run trades - *What would have happened if*. Enter how much money you would have spent and what the price per coin was.
+```yml
+# Total cost of that: 3742.35 $
+# 1 Bitcoin had a price of: 9355.875 $
+trades:
+  bitcoin:
+    - invest: 3742.35
+      price:  9355.875
+```
+
 ### Example
-An example file could look like this. It shows two bitcoin trades, one ethereum trade and an empty place holder for iota. When specifying an empty array, it serves only as a reminder for you to fill that out later and will not be shown in the stats.
+An example file could look like this. It shows three bitcoin trades (with each different option to specify your purchases), one ethereum trade and an empty place holder for iota. When specifying an empty array, it serves only as a reminder for you to fill that out later and will not be shown in the stats.
 ```yml
 trades:
   bitcoin:
-    - amount:  5.323
-      price:   10100.52
-      date:    2017-12-05
-    - amount:  0.001
-      price:   110323.54
-      date:    2018-01-27
+    - amount: 0.4
+      invest: 3742.35
+      date:   2017-12-03
+    - amount: 0.4
+      price:  9355.875
+      date:   2017-12-04
+    - invest: 3742.35
+      price:  9355.875
+      date:   2017-12-05
   ethereum:
-    - amount:  20
-      price:   1070
-      date:    2017-12-05
+    - amount: 20
+      price:  1070
+      date:   2017-12-05
   # Note in this case 'iota' is defined as an empty array
   # and will not be shown in the stats.
   iota: []
