@@ -90,6 +90,8 @@ trades:
 
 #### Option-1: amount and invest
 How many coins did you buy and how much money in total did you spent on that?
+
+This option is most useful when having done a real purchase. Enter the total money spent and the coins received. That way you don't have to calculate any market fees or transaction fees yourself.
 ```yml
 # Bought 0.4 coins
 # Total cost of that: 3742.35 $
@@ -100,6 +102,8 @@ trades:
 ```
 #### Option-2: amount and price
 How many coins did you buy and how much did one coin cost?
+
+This option is most useful when doint dry-run trades - *What would have happened if*. Enter how many coins you had bought at what price per coin.
 ```yml
 # Bought 0.4 coins
 # 1 Bitcoin had a price of: 9355.875 $
@@ -110,6 +114,8 @@ trades:
 ```
 #### Option-3: invest and price
 How much money in total did you spend and how much did one coin cost?
+
+This option is most useful when doint dry-run trades - *What would have happened if*. Enter how much money you would have spent and what the price per coin was.
 ```yml
 # Total cost of that: 3742.35 $
 # 1 Bitcoin had a price of: 9355.875 $
