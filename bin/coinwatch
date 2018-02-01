@@ -59,28 +59,41 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.5'
+VERSION = '0.6'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
 # Row settings
-ROW_SETTINGS = {
+COL_SETTINGS = {
     # colname   #col width    #precision  #headline
-    'coin':      {'width': 13, 'prec': None, 'head': 'COIN'},
+    'name':      {'width': 13, 'prec': None, 'head': 'CURRENCY'},
     'date':      {'width': 10, 'prec': None, 'head': 'BUY DATE'},
     'buyprice':  {'width': 14, 'prec':    6, 'head': '$ BUY PRICE/c'},
     'diffprice': {'width': 15, 'prec':    6, 'head': '$ DIFF PRICE/c'},
     'nowprice':  {'width': 14, 'prec':    6, 'head': '$ NOW PRICE/c'},
-    'amount':    {'width': 15, 'prec':    8, 'head': 'AMOUNT'},
+    'amount':    {'width': 16, 'prec':    6, 'head': 'NUM COINS'},
     'invest':    {'width': 10, 'prec':    2, 'head': '$ INVEST'},
     'wealth':    {'width': 10, 'prec':    2, 'head': '$ WEALTH'},
     'profit':    {'width': 12, 'prec':    2, 'head': '$ PROFIT'},
     'percent':   {'width':  7, 'prec':    1, 'head': 'PERCENT'}
 }
-# What rows to display and in what order
-# Can be overwritten via command line arguments
-ROW_DISPLAY = [
-    'coin',
+# All available columns
+COL_AVAILABLE = [
+    'name',
+    'date',
+    'buyprice',
+    'diffprice',
+    'nowprice',
+    'amount',
+    'invest',
+    'wealth',
+    'profit',
+    'percent'
+]
+# Default columns to display if not otherwise overwritten via
+# configuration file or command line arguments
+COL_DEFAULT = [
+    'name',
     'date',
     'buyprice',
     'diffprice',
@@ -127,6 +140,19 @@ EXAMPLE_CONFIG = '''---
 
 # Example config:
 # ---------------
+
+# Configure coinwatch
+config:
+  # Configure what columns to display and in what order.
+  # To see all available columns view help: $ coinwatch --help
+  # Columns specified via command line (-r) take precedence
+  columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  # Specify your table border style
+  # Available values: thin, thick and ascii
+  # Use ascii if you want to further process the output of this application
+  table: thin
+
+# Configure your purchases
 trades:
   bitcoin:
     # Options-1
@@ -464,24 +490,28 @@ def print_help():
        %s [--version]
 
 %s is a low-dependency python[23] client to keep track of your crypto trades
-and easily let's you see if you are winning or losing.
+and easily let's you see if you are winning or losing. If you are not actually
+trading you can use it to simulate purchases and see what would have happened if.
 
 OPTIONS:
-  -c, --config   Specify path of an alternative configuration file.
+  -c, --config   Specify path of an alternative configuration file. Store
+                 different configurations in different configuration files in
+                 order to simulate multiple profiles.
                  Examples:
-                   -c path/to/conf.yml
-  -r, --row      Specify the order and columns to use in a row.
-                 In case you dont need all columns to be shown or want
-                 a different order of columns, use this argument to specify it.
+                   -c path/to/conf/john.yml
+                   -c path/to/conf/jane.yml
+  -r, --row      Specify the order and columns to use in a row. In case you
+                 dont need all columns to be shown or want a different order of
+                 columns, use this argument to specify it.
+                 Available columns:
+                   %s
                  Examples:
                    -r "coin date profit percent"
                    -r "coin buyprice nowprice amount wealth"
-                 Default:
-                   -r "coin date buyprice diffprice nowprice amount invest wealth profit percent"
-  -t, --table    Specify different table border.
+  -t, --table    Specify different table border. In case you need to process
+                 the output of this tool use 'ascii'.
                  Available values: 'thin', 'thick' and 'ascii'.
                  The default is 'thin'.
-                 In case you need to process the output of this tool use 'ascii'.
                  Examples:
                    -t thin
                    -t thick
@@ -495,18 +525,10 @@ NOTE:
   No financial aid, support or any other recommendation is provided.
   Trade at your own risk! And only invest what you can effort to lose.
 
-API:
-  Currently supported remote price and coin API's are:
-    - coinmarketcap
-
 CONFIGURATION:
   When starting %s for the first time a base configuration file will be
-  created in ~/.config/%s/config.yml.
-  You should edit this file and add your trades:
-    - What currency
-    - When bought
-    - How much bought
-    - Price for 1 coin of currency at that date''' % (NAME, NAME, NAME, NAME, NAME, NAME))
+  created in ~/.config/%s/config.yml''' %
+          (NAME, NAME, NAME, NAME, ' '.join(COL_AVAILABLE), NAME, NAME))
 
 
 def fdec(number, length, places, settings, colorize):
@@ -560,35 +582,63 @@ def get_config_path():
     return conf
 
 
-def get_trades(settings):
+def read_config(path):
     '''Read trades from local yaml configuration file'''
-    if settings['config']:
-        path = settings['config']
-    else:
+    if not path:
         path = get_config_path()
 
+    data = dict()
     if os.path.isfile(path):
         with open(path, 'r') as stream:
             data = to_yaml(stream)
-            if 'trades' in data:
-                return data['trades']
 
-    return dict()
+    # Fill up defaults
+    if 'trades' not in data:
+        data['trades'] = dict()
+    if 'config' not in data:
+        data['config'] = dict()
+
+    return data
+
+
+def validate_config(config):
+    '''Validate configuration file'''
+
+    # Validate config
+    if 'config' in config:
+        # Columns
+        if 'columns' in config['config'] and config['config']['columns']:
+            for col in config['config']['columns'].split(' '):
+                if col not in COL_AVAILABLE:
+                    logerr('[ERR] Invalid colum name in config: \'' + col + '\'')
+                    logerr('[ERR] Valid names: ' + ', '.join(COL_AVAILABLE))
+                    sys.exit(2)
+        # Table border
+        if 'table' in config['config'] and config['config']['table']:
+            if config['config']['table'] not in ('thin', 'thick', 'ascii'):
+                logerr('[ERR] Invalid table border style in config: ' + config['config']['table'])
+                logerr('[ERR] Allowed values: thin, thick and ascii')
+                sys.exit(2)
+
+    # Validate trades
+    if not config['trades']:
+        print('No trades found, check your config')
+        sys.exit(0)
 
 
 def format_column(colname, value, settings):
     '''Format each column'''
 
     # No special formatting for those
-    if colname == 'coin' or colname == 'date':
+    if colname == 'name' or colname == 'date':
         return value
 
     # Now we make it really nice and tidy
     color = bool(colname == 'profit' or colname == 'diffprice')
     return fdec(
         value,
-        ROW_SETTINGS[colname]['width'],
-        ROW_SETTINGS[colname]['prec'],
+        COL_SETTINGS[colname]['width'],
+        COL_SETTINGS[colname]['prec'],
         settings,
         color
     )
@@ -605,15 +655,15 @@ def print_stats(currencies, trades, settings):
     }
 
     # Get columns to display
-    display_columns = settings['rows']
+    display_columns = settings['cols']
 
     # Initialize the table
     tbl = Table(len(display_columns), settings['table'])
-    tbl.set_col_widths(*[ROW_SETTINGS[x]['width'] for x in display_columns])
+    tbl.set_col_widths(*[COL_SETTINGS[x]['width'] for x in display_columns])
 
     # Print headline
     print(tbl.sep_first())
-    print(tbl.row(*[ROW_SETTINGS[x]['head'] for x in display_columns]))
+    print(tbl.row(*[COL_SETTINGS[x]['head'] for x in display_columns]))
     print(tbl.sep())
 
     for currency in currencies:
@@ -672,7 +722,7 @@ def print_stats(currencies, trades, settings):
 
                     # Add all available row values into dict
                     values = dict()
-                    values['coin'] = format_column('coin', name, settings)
+                    values['name'] = format_column('name', name, settings)
                     values['date'] = format_column('date', str(trade.get('date', '-')), settings)
                     values['buyprice'] = format_column('buyprice', buyprice, settings)
                     values['diffprice'] = format_column('diffprice', diffprice, settings)
@@ -697,7 +747,7 @@ def print_stats(currencies, trades, settings):
 
     # Print overall summary
     values = dict()
-    values['coin'] = 'TOTAL'
+    values['name'] = 'TOTAL'
     values['date'] = ''
     values['buyprice'] = ''
     values['diffprice'] = ''
@@ -766,11 +816,11 @@ def parse_args(argv, settings):
         # Custom rows to display in the given order
         elif opt in ('-r', '--row'):
             for col in arg.split(' '):
-                if col not in ROW_DISPLAY:
+                if col not in COL_AVAILABLE:
                     logerr('[ERR] Invalid colum name: \'' + col + '\'')
-                    logerr('[ERR] Valid names: ' + ', '.join(ROW_DISPLAY))
+                    logerr('[ERR] Valid names: ' + ', '.join(COL_AVAILABLE))
                     sys.exit(2)
-            settings['rows'] = arg.split()
+            settings['cols'] = arg.split()
         # Choose table border
         elif opt in ('-t', '--table'):
             if arg not in('thin', 'thick', 'ascii'):
@@ -783,7 +833,7 @@ def parse_args(argv, settings):
             if not os.path.isfile(arg):
                 logerr('[ERR] ' + opt + ' specified config does not exist: ' + arg)
                 sys.exit(2)
-            settings['config'] = arg
+            settings['path'] = arg
         # Disable color
         elif opt in ('-n', '--nocolor'):
             settings['color'] = False
@@ -804,37 +854,53 @@ def parse_args(argv, settings):
 def main(argv):
     '''Main entrypoint.'''
 
-    # Default settings if not otherwise specified via cmd args
+    # Default settings if not otherwise specified via config or cmd args
     settings = {
-        'config':  None,
-        'color':   True,
-        'human':   False,
-        'verbose': False,
-        'table':   'thin',
-        'rows':    ROW_DISPLAY
+        'path':    None,     # Path to configuration file
+        'color':   True,     # Colorize output
+        'human':   False,    # Human readable number format
+        'verbose': False,    # Verbosity?
+        'table':   None,     # Table border style
+        'cols':    dict()    # What columns in what order to display
     }
 
-    # Overwrite settings
-    settings = parse_args(argv, settings)
-
-    # bootstrap (creating config & dir)
+    # Bootstrap application (creating config & dir)
     bootstrap()
 
-    # Read local trading config
-    trades = get_trades(settings)
+    # Get configuration from command line arguments
+    settings = parse_args(argv, settings)
 
-    if not trades:
-        if settings['config']:
-            conf = settings['config']
-        else:
-            conf = get_config_path()
-        print('No trades found, check your config:', conf)
-        sys.exit(0)
+    # Read and validate configuration file
+    config = read_config(settings['path'])
+    validate_config(config)
+
+    # Apply column settings
+    if settings['cols']:
+        # Set via cmd args, all good
+        pass
+    elif 'columns' in config['config'] and config['config']['columns']:
+        # Available in configuration file
+        settings['cols'] = config['config']['columns'].split()
+    else:
+        # Nowhere set, use defaults
+        settings['cols'] = COL_DEFAULT
+
+    # Apply table border settings
+    if settings['table']:
+        # Set via cmd args, all good
+        pass
+    elif 'table' in config['config'] and config['config']['table']:
+        # Available in configuration file
+        settings['table'] = config['config']['table']
+    else:
+        # Nowhere set, use defaults
+        settings['table'] = 'thin'
 
     # Get remote price info
     currencies = to_json(fetch_url(API_URL))
+
     # Show trading stats
-    print_stats(currencies, trades, settings)
+    print_stats(currencies, config['trades'], settings)
 
 
 ############################################################
