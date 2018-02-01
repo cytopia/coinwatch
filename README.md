@@ -76,6 +76,14 @@ Configuration is done in yaml format. If you have never heard about yaml before,
 ### Structure
 The configuration file is build up like this:
 ```yml
+# Configure coinwatch
+config:
+  # Configure what columns to display and in what order.
+  # To see all available columns view help: $ coinwatch --help
+  # Columns specified via command line (-r) take precedence
+  columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+
+# Configure your purchases
 trades:
   # CURRENCY_ID is found by looking up the 'id' key from
   # https://api.coinmarketcap.com/v1/ticker/?limit=0
