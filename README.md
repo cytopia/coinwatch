@@ -82,6 +82,10 @@ config:
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
   columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  # Specify your table border style
+  # Available values: thin, thick and ascii
+  # Use ascii if you want to further process the output of this application
+  table: thin
 
 # Configure your purchases
 trades:
@@ -94,7 +98,7 @@ trades:
       date:     # <-- [yyyy-mm-dd]  When was that bought
 ```
 
-`[1]` `amount`, `invest` and `price` at the same time? Yes that's right there is duplication, however only always two of those three can be specified at the same time. This gives the possibility to record you trades in three different ways:
+**`[1]`** `amount`, `invest` and `price` at the same time? Yes that's right there is duplication, however only always two of those three can be specified at the same time. This gives the possibility to record you trades in three different ways:
 
 #### Option-1: amount and invest
 How many coins did you buy and how much money in total did you spent on that?

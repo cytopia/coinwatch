@@ -147,6 +147,10 @@ config:
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
   columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  # Specify your table border style
+  # Available values: thin, thick and ascii
+  # Use ascii if you want to further process the output of this application
+  table: thin
 
 # Configure your purchases
 trades:
@@ -600,14 +604,21 @@ def read_config(path):
 def validate_config(config):
     '''Validate configuration file'''
 
-    # Validate config.columns
+    # Validate config
     if 'config' in config:
+        # Columns
         if 'columns' in config['config'] and config['config']['columns']:
             for col in config['config']['columns'].split(' '):
                 if col not in COL_AVAILABLE:
                     logerr('[ERR] Invalid colum name in config: \'' + col + '\'')
                     logerr('[ERR] Valid names: ' + ', '.join(COL_AVAILABLE))
                     sys.exit(2)
+        # Table border
+        if 'table' in config['config'] and config['config']['table']:
+            if config['config']['table'] not in ('thin', 'thick', 'ascii'):
+                logerr('[ERR] Invalid table border style in config: ' + config['config']['table'])
+                logerr('[ERR] Allowed values: thin, thick and ascii')
+                sys.exit(2)
 
     # Validate trades
     if not config['trades']:
@@ -849,7 +860,7 @@ def main(argv):
         'color':   True,     # Colorize output
         'human':   False,    # Human readable number format
         'verbose': False,    # Verbosity?
-        'table':   'thin',   # Table border style
+        'table':   None,     # Table border style
         'cols':    dict()    # What columns in what order to display
     }
 
@@ -873,6 +884,17 @@ def main(argv):
     else:
         # Nowhere set, use defaults
         settings['cols'] = COL_DEFAULT
+
+    # Apply table border settings
+    if settings['table']:
+        # Set via cmd args, all good
+        pass
+    elif 'table' in config['config'] and config['config']['table']:
+        # Available in configuration file
+        settings['table'] = config['config']['table']
+    else:
+        # Nowhere set, use defaults
+        settings['table'] = 'thin'
 
     # Get remote price info
     currencies = to_json(fetch_url(API_URL))
