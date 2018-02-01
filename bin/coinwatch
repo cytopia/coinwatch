@@ -66,15 +66,16 @@ API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 # Row settings
 ROW_SETTINGS = {
     # colname   #col width    #precision  #headline
-    'coin':     {'width': 13, 'prec': None, 'head': 'COIN'},
-    'date':     {'width': 10, 'prec': None, 'head': 'BUY DATE'},
-    'buyprice': {'width': 14, 'prec':    6, 'head': 'BUY PRICE/c'},
-    'nowprice': {'width': 14, 'prec':    6, 'head': 'NOW PRICE/c'},
-    'amount':   {'width': 15, 'prec':    8, 'head': 'AMOUNT'},
-    'invest':   {'width': 10, 'prec':    2, 'head': 'INVEST'},
-    'wealth':   {'width': 10, 'prec':    2, 'head': 'WEALTH'},
-    'profit':   {'width': 12, 'prec':    2, 'head': 'PROFIT'},
-    'percent':  {'width':  7, 'prec':    1, 'head': 'PERCENT'}
+    'coin':      {'width': 13, 'prec': None, 'head': 'COIN'},
+    'date':      {'width': 10, 'prec': None, 'head': 'BUY DATE'},
+    'buyprice':  {'width': 14, 'prec':    6, 'head': '$ BUY PRICE/c'},
+    'diffprice': {'width': 15, 'prec':    6, 'head': '$ DIFF PRICE/c'},
+    'nowprice':  {'width': 14, 'prec':    6, 'head': '$ NOW PRICE/c'},
+    'amount':    {'width': 15, 'prec':    8, 'head': 'AMOUNT'},
+    'invest':    {'width': 10, 'prec':    2, 'head': '$ INVEST'},
+    'wealth':    {'width': 10, 'prec':    2, 'head': '$ WEALTH'},
+    'profit':    {'width': 12, 'prec':    2, 'head': '$ PROFIT'},
+    'percent':   {'width':  7, 'prec':    1, 'head': 'PERCENT'}
 }
 # What rows to display and in what order
 # Can be overwritten via command line arguments
@@ -82,6 +83,7 @@ ROW_DISPLAY = [
     'coin',
     'date',
     'buyprice',
+    'diffprice',
     'nowprice',
     'amount',
     'invest',
@@ -105,19 +107,39 @@ EXAMPLE_CONFIG = '''
 #   # CURRENCY_ID is found by looking up the 'id' key from
 #   # https://api.coinmarketcap.com/v1/ticker/?limit=0
 #   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
-#     - amount:   # <-- [decimal]     How many coins for that currency were bought
-#       price:    # <-- [decimal]     Price for 1 coin of that currency
+#     - amount:   # <-- [decimal]     [1] How many coins for that currency were bought
+#       invest:   # <-- [decimal]     [1] How much money was spent on all coins
+#       price:    # <-- [decimal]     [1] Price for 1 coin on that date
 #       date:     # <-- [yyyy-mm-dd]  When was that bought
 #
+# [1] IMPORTANT: Only always specify two of 'amount', 'invest' and 'price'.
+#                The third value will always be calculated from the other two.
 #
+# [1] Trades can/must be configured in three different ways:
+# Option-1
+#     amount: how many coins bought
+#     invest: how much money spent on all coins
+# Option-2
+#     amount: how many coins bought
+#     price:  price for one coin
+# Option-3
+#     invest: how much money spent on all coins
+#     price:  price for one coin
+
 # Config file example:
 # --------------------
 # trades:
 #   bitcoin:
+#     # Options-1
 #     - amount:  5.323
-#       price:   10100.52
+#       invest:  35432.23
 #       date:    2017-12-05
+#     # Options-2
 #     - amount:  0.001
+#       price:   110323.54
+#       date:    2018-01-27
+#     # Options-3
+#     - invest:  100
 #       price:   110323.54
 #       date:    2018-01-27
 #   ethereum:
@@ -412,10 +434,17 @@ def to_json(string):
 
 def percent(total, part, default):
     '''Calculate percent with default value in case part is zero'''
-    if part == 0:
-        return default
 
-    return 100 * total / part
+    if not isinstance(total, Decimal):
+        total = Decimal(str(total))
+    if not isinstance(part, Decimal):
+        part = Decimal(str(part))
+
+    if part > 0 or part < 0:
+        return Decimal('100.00') * total / part
+
+    return default
+
 
 
 ############################################################
@@ -450,7 +479,7 @@ OPTIONS:
                    -r "coin date profit percent"
                    -r "coin buyprice nowprice amount wealth"
                  Default:
-                   -r "coin date buyprice nowprice amount invest wealth profit percent"
+                   -r "coin date buyprice diffprice nowprice amount invest wealth profit percent"
   -t, --table    Specify different table border.
                  Available values: 'thin', 'thick' and 'ascii'.
                  The default is 'thin'.
@@ -557,7 +586,7 @@ def format_column(colname, value, settings):
         return value
 
     # Now we make it really nice and tidy
-    color = bool(colname == 'profit')
+    color = bool(colname == 'profit' or colname == 'diffprice')
     return fdec(
         value,
         ROW_SETTINGS[colname]['width'],
@@ -602,15 +631,39 @@ def print_stats(currencies, trades, settings):
                 # Loop over trades in each currency
                 # (Each currency can have multiple trades on different dates/times)
                 for trade in trades[name]:
-                    # Extract values from config
-                    date = str(trade.get('date', 'yyyy-mm-dd'))
-                    amount = Decimal(str(trade.get('amount', '0.0')))
-                    buyprice = Decimal(str(trade.get('price', '0.0')))
+
+                    # Check calculation options based on values found in config
+                    # 1. amount+invest
+                    # 2. amount+price
+                    # 3. invest+price
+                    if 'amount' in trade and 'invest' in trade:
+                        amount = Decimal(str(trade.get('amount', '0.0')))
+                        invest = Decimal(str(trade.get('invest', '0.0')))
+                        if amount > 0 or amount < 0:
+                            buyprice = invest / amount
+                        else:
+                            buyprice = Decimal('0.0')
+                    elif 'amount' in trade and 'price' in trade:
+                        amount = Decimal(str(trade.get('amount', '0.0')))
+                        buyprice = Decimal(str(trade.get('price', '0.0')))
+                        invest = buyprice * amount
+                    elif 'invest' in trade and 'price' in trade:
+                        invest = Decimal(str(trade.get('invest', '0.0')))
+                        buyprice = Decimal(str(trade.get('price', '0.0')))
+                        if buyprice > 0 or buyprice < 0:
+                            amount = invest / buyprice
+                        else:
+                            amount = Decimal('0.0')
+                    else:
+                        amount = Decimal('0.0')
+                        invest = Decimal('0.0')
+                        buyprice = Decimal('0.0')
+
                     # Extract values from remote API
                     nowprice = Decimal(str(currency['price_usd']))
 
-                    # Calculate invest, wealth and profit
-                    invest = buyprice * amount
+                    # Calculate diffprice, wealth and profit
+                    diffprice = nowprice - buyprice
                     wealth = nowprice * amount
                     profit = wealth - invest
 
@@ -622,15 +675,16 @@ def print_stats(currencies, trades, settings):
                     # Add all available row values into dict
                     values = dict()
                     values['coin'] = format_column('coin', name, settings)
-                    values['date'] = format_column('date', date, settings)
+                    values['date'] = format_column('date', str(trade.get('date', '-')), settings)
                     values['buyprice'] = format_column('buyprice', buyprice, settings)
-                    values['nowprice'] = format_column('nowprice', buyprice, settings)
+                    values['diffprice'] = format_column('diffprice', diffprice, settings)
+                    values['nowprice'] = format_column('nowprice', nowprice, settings)
                     values['amount'] = format_column('amount', amount, settings)
                     values['invest'] = format_column('invest', invest, settings)
                     values['wealth'] = format_column('wealth', wealth, settings)
                     values['profit'] = format_column('profit', profit, settings)
                     values['percent'] = format_column('percent',
-                                                      percent(nowprice, buyprice, 0), settings)
+                                                      percent(wealth, invest, 0), settings)
 
                     # Only add column values that are wanted for display
                     row = []
@@ -648,6 +702,7 @@ def print_stats(currencies, trades, settings):
     values['coin'] = 'TOTAL'
     values['date'] = ''
     values['buyprice'] = ''
+    values['diffprice'] = ''
     values['nowprice'] = ''
     values['amount'] = ''
     values['invest'] = format_column('invest', totals['invest'], settings)
