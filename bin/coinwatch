@@ -297,6 +297,12 @@ class Num(object):
             quantizer = Decimal(str('1.' + str('0' * precision)))
             return Num.__num(number).quantize(quantizer)
 
+    @staticmethod
+    def to_string(number, precision):
+        '''Return string value and round to Xth precision'''
+        number = Num.round(number, precision)
+        return ('{0:,.' + str(precision) + 'f}').format(number)
+
 
 ############################################################
 # Class: Table
@@ -660,10 +666,7 @@ class Coinwatch(object):
 
             # 1. Rounding
             if col_settings[val]['prec'] is not None and fvalues[val]:
-                # Round properly
-                fvalues[val] = Num.round(values[val], col_settings[val]['prec'])
-                # Format properly
-                fvalues[val] = ('{0:,.' + str(col_settings[val]['prec']) + 'f}').format(fvalues[val])
+                fvalues[val] = Num.to_string(values[val], col_settings[val]['prec'])
             # 2. Humanize output
             if humanize:
                 fvalues[val] = Coinwatch.__humanize_number(
