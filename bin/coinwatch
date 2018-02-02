@@ -539,11 +539,21 @@ class Table(object):
 class Coinwatch(object):
     '''Coinwatch Class'''
 
-    __col_settings = COL_SETTINGS
+    # General output settings
+    __settings = {
+        'color': False,    # Colorize output?
+        'human': False,    # Humanize number output?
+        'table': 'thick',  # Table border style
+        'cols': dict()     # Columns to display
+    }
 
-    def __init__(self):
-        '''Constructur'''
-        pass
+    # Specific settings for each column
+    __col_settings = dict()
+
+    def __init__(self, settings, col_settings):
+        '''Set settings'''
+        self.__settings = settings
+        self.__col_settings = col_settings
 
     @staticmethod
     def __get_amount(trade):
@@ -631,37 +641,59 @@ class Coinwatch(object):
 
         return number
 
-    @staticmethod
-    def __format_trade_row_values(values, col_settings, colorize, humanize):
+    def __format_trade_row_values(self, values):
         '''
         Use extracted trade row value dictionary and format
         it nicely based on given colum settings.
         col_settings   Holds settings for each column
         colorize       Global setting that determines whether to apply colors.
         '''
+        # Read settings into var for better readability
+        col_settings = self.__col_settings
+        colorize = self.__settings['color']
+        humanize = self.__settings['human']
+
         clr = Color(colorize)
         fvalues = dict()
         for val in values:
             fvalues[val] = values[val]
 
             # 1. Rounding
-            if col_settings[val]['prec'] is not None and len(str(fvalues[val])):
+            if col_settings[val]['prec'] is not None and fvalues[val]:
                 # Round properly
                 fvalues[val] = Num.round(values[val], col_settings[val]['prec'])
                 # Format properly
                 fvalues[val] = ('{0:,.' + str(col_settings[val]['prec']) + 'f}').format(fvalues[val])
             # 2. Humanize output
             if humanize:
-                fvalues[val] = Coinwatch.__humanize_number(fvalues[val], col_settings[val]['prec'])
+                fvalues[val] = Coinwatch.__humanize_number(
+                    fvalues[val],
+                    col_settings[val]['prec']
+                )
             # 3. Colorize
-            if col_settings[val]['color'] and len(str(values[val])):
+            if col_settings[val]['color'] and fvalues[val]:
                 if values[val] < 0:
                     fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
                 else:
                     fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
         return fvalues
 
-    def print_stats(self, currencies, trades, settings):
+    def __format_summary_row_values(self, totals):
+        '''Format and return the summary row'''
+        values = dict()
+        values['name'] = 'TOTAL'
+        values['date'] = ''
+        values['buyprice'] = ''
+        values['diffprice'] = ''
+        values['nowprice'] = ''
+        values['amount'] = ''
+        values['invest'] = totals['invest']
+        values['wealth'] = totals['wealth']
+        values['profit'] = totals['profit']
+        values['percent'] = Num.percent(totals['wealth'], totals['invest'])
+        return self.__format_trade_row_values(values)
+
+    def print_stats(self, currencies, trades):
         '''Print trading stats in a nice table'''
 
         # Total accumulated values
@@ -671,17 +703,18 @@ class Coinwatch(object):
             'profit': Decimal('0.0'),
         }
 
-        # Get columns to display
-        display_columns = settings['cols']
+        # Get columns to to display and their settings
+        display_columns = self.__settings['cols']
+        col_settings = self.__col_settings
 
         # Initialize the table
-        tbl = Table(len(display_columns), settings['table'])
-        tbl.set_col_widths(*[COL_SETTINGS[x]['width'] for x in display_columns])
-        tbl.set_col_aligns(*[COL_SETTINGS[x]['align'] for x in display_columns])
+        tbl = Table(len(display_columns), self.__settings['table'])
+        tbl.set_col_widths(*[col_settings[x]['width'] for x in display_columns])
+        tbl.set_col_aligns(*[col_settings[x]['align'] for x in display_columns])
 
         # Print headline
         print(tbl.sep_first())
-        print(tbl.row(*[COL_SETTINGS[x]['head'] for x in display_columns]))
+        print(tbl.row(*[col_settings[x]['head'] for x in display_columns]))
         print(tbl.sep())
 
         for currency in currencies:
@@ -700,7 +733,7 @@ class Coinwatch(object):
 
                         # Extract and format row values
                         values = self.__extract_trade_row_values(name, currency['price_usd'], trade)
-                        fvalues = self.__format_trade_row_values(values, self.__col_settings, settings['color'], settings['human'])
+                        fvalues = self.__format_trade_row_values(values)
 
                         # Calculate total accumulated values
                         totals['invest'] = Num.sum(totals['invest'], values['invest'])
@@ -719,18 +752,7 @@ class Coinwatch(object):
                     print(tbl.sep())
 
         # Print overall summary
-        values = dict()
-        values['name'] = 'TOTAL'
-        values['date'] = ''
-        values['buyprice'] = ''
-        values['diffprice'] = ''
-        values['nowprice'] = ''
-        values['amount'] = ''
-        values['invest'] = totals['invest']
-        values['wealth'] = totals['wealth']
-        values['profit'] = totals['profit']
-        values['percent'] = Num.percent(totals['wealth'], totals['invest'])
-        fvalues = self.__format_trade_row_values(values, self.__col_settings, settings['color'], settings['human'])
+        fvalues = self.__format_summary_row_values(totals)
 
         # Set colums to be displayed
         row = []
@@ -1065,8 +1087,14 @@ def main(argv):
     # Get remote price info
     currencies = to_json(fetch_url(API_URL))
 
-    cowa = Coinwatch()
-    cowa.print_stats(currencies, config['trades'], settings)
+    # Initialize and run Coinwatch
+    cowa = Coinwatch({
+        'color': settings['color'],  # Colorize output?
+        'human': settings['human'],  # Humanize number output?
+        'table': settings['table'],  # Table border style
+        'cols': settings['cols']     # Columns to display
+    }, COL_SETTINGS)
+    cowa.print_stats(currencies, config['trades'])
 
 
 ############################################################
