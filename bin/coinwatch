@@ -35,11 +35,12 @@ except ImportError:
     from urllib2 import URLError, HTTPError
 
 # Default imports
-from decimal import Decimal
+from decimal import Decimal, getcontext, localcontext
 from random import randint
 import os
 import getopt
 import sys
+import re
 import json
 import yaml
 
@@ -59,23 +60,23 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.6'
+VERSION = '0.7'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
 # Row settings
 COL_SETTINGS = {
-    # colname   #col width    #precision  #headline
-    'name':      {'width': 13, 'prec': None, 'head': 'CURRENCY'},
-    'date':      {'width': 10, 'prec': None, 'head': 'BUY DATE'},
-    'buyprice':  {'width': 14, 'prec':    6, 'head': '$ BUY PRICE/c'},
-    'diffprice': {'width': 15, 'prec':    6, 'head': '$ DIFF PRICE/c'},
-    'nowprice':  {'width': 14, 'prec':    6, 'head': '$ NOW PRICE/c'},
-    'amount':    {'width': 16, 'prec':    6, 'head': 'NUM COINS'},
-    'invest':    {'width': 10, 'prec':    2, 'head': '$ INVEST'},
-    'wealth':    {'width': 10, 'prec':    2, 'head': '$ WEALTH'},
-    'profit':    {'width': 12, 'prec':    2, 'head': '$ PROFIT'},
-    'percent':   {'width':  7, 'prec':    1, 'head': 'PERCENT'}
+    # colname    #col width    #col align     #precision   #color          #headline
+    'name':      {'width': 13, 'align': '<', 'prec': None, 'color': False, 'head': 'CURRENCY'},
+    'date':      {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'BUY DATE'},
+    'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ BUY PRICE/c'},
+    'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True, 'head': '$ DIFF PRICE/c'},
+    'nowprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ NOW PRICE/c'},
+    'amount':    {'width': 16, 'align': '>', 'prec':    6, 'color': False, 'head': 'NUM COINS'},
+    'invest':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ INVEST'},
+    'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ WEALTH'},
+    'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True, 'head': '$ PROFIT'},
+    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': False, 'head': 'PERCENT'}
 }
 # All available columns
 COL_AVAILABLE = [
@@ -219,6 +220,93 @@ class Color(object):
 
 
 ############################################################
+# Class: Num
+############################################################
+
+class Num(object):
+    '''Wrapper to ensure correct variable type for numbers'''
+
+    __precision = 45
+
+    @staticmethod
+    def __num(number):
+        '''Convert to correct format'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return Decimal(str(number))
+
+    @staticmethod
+    def __zero():
+        '''Get zero'''
+        return Num.__num(0)
+
+    @staticmethod
+    def get(number):
+        '''Make sure to use Decimal'''
+        return Num.__num(number)
+
+    @staticmethod
+    def sum(num1, num2):
+        '''Addition'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return Num.__num(num1) + Num.__num(num2)
+
+    @staticmethod
+    def sub(num1, num2):
+        '''Substraction'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return Num.__num(num1) - Num.__num(num2)
+
+    @staticmethod
+    def mul(num1, num2):
+        '''Multiplication'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return Num.__num(num1) * Num.__num(num2)
+
+    @staticmethod
+    def div(num1, num2):
+        '''Division'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            if Num.iszero(num2):
+                return Num.__num(getcontext().Emax)
+            return Num.__num(num1) / Num.__num(num2)
+
+    @staticmethod
+    def iszero(number):
+        '''Check if number is zero'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return bool(Num.__num(number) == Num.__zero())
+
+    @staticmethod
+    def percent(whole, part):
+        '''Percent'''
+        return Num.div(
+            Num.mul(100, whole),
+            part
+        )
+
+    @staticmethod
+    def round(number, precision):
+        '''Round a number to the given precision'''
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            # E.g.: precision=3: '1.000'
+            quantizer = Decimal(str('1.' + str('0' * precision)))
+            return Num.__num(number).quantize(quantizer)
+
+    @staticmethod
+    def to_string(number, precision):
+        '''Return string value and round to Xth precision'''
+        number = Num.round(number, precision)
+        return ('{0:,.' + str(precision) + 'f}').format(number)
+
+
+############################################################
 # Class: Table
 ############################################################
 
@@ -227,6 +315,13 @@ class Table(object):
 
     # Default column width if not set
     __def_width = 10
+
+    # Default align if not set per column
+    __def_align = '<'  # Valid: '<' (left), '=' (center), '>' (right)
+
+    # Col formatter
+    __col_widths = []
+    __col_aligns = []
 
     # Row formatter used by format()
     __row_format = None
@@ -293,7 +388,8 @@ class Table(object):
         else:
             self.__sym = self.__sym_border['ascii']
 
-        # Set colum width with default widths
+        # Set colum aligns and width with defaults
+        self.set_col_aligns()
         self.set_col_widths()
 
     def __set_row_formats(self, *widths):
@@ -301,14 +397,23 @@ class Table(object):
         This prive function sets the row formatter strings.
         It has to be re-called everytime the column widths change.
         '''
-
         # Get symbols in local var for better readability
         sym = self.__sym
 
         # Create row format
         row = sym['ver-sep']
-        for width in widths:
-            row += ' {:<' + str(width) + '} ' + sym['ver-sep']
+        for idx, width in enumerate(widths):
+            # Get current alignment
+            if self.__col_aligns[idx] == '<':
+                align = '<'
+            elif self.__col_aligns[idx] == '=':
+                align = '='
+            elif self.__col_aligns[idx] == '>':
+                align = '>'
+            else:
+                align = self.__def_align
+
+            row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
 
         self.__row_format = row
 
@@ -339,28 +444,88 @@ class Table(object):
 
         self.__bot_format = row[:-1] + sym['bot-rgt']  # Adjust last char
 
+    @staticmethod
+    def __ansilen(string):
+        '''Get string length without ansi escape codes'''
+        regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
+        return len(regex.sub('', str(string)))
+
     def set_col_widths(self, *widths):
         '''
         Set colum widths.
-        If colum width is not set, default_width will be used
+        If colum width is not set, default_width will be used.
         '''
-        colum_width = []
+        column_widths = []
 
         # Store colum widths in array
         for width in widths:
-            colum_width.append(width)
+            column_widths.append(width)
 
         # Fill missing widths with default widths:
         if len(widths) < self.__rows:
             for i in range((self.__rows - len(widths))):
-                colum_width.append(self.__def_width)
+                column_widths.append(self.__def_width)
+
+        # Store widths
+        self.__col_widths = column_widths
 
         # Re-build row-formats on every width reset
-        self.__set_row_formats(*widths)
+        self.__set_row_formats(*column_widths)
 
-    def row(self, *colums):
-        '''Get formated row with X arguments (num of colums)'''
-        return self.__row_format.format(*colums)
+    def set_col_aligns(self, *aligns):
+        '''
+        Set colum alignments.
+        If colum align is not set, default_align will be used.
+        '''
+        column_aligns = []
+
+        # Store colum widths in array
+        for align in aligns:
+            column_aligns.append(align)
+
+        # Fill missing widths with default widths:
+        if len(aligns) < self.__rows:
+            for i in range((self.__rows - len(aligns))):
+                column_aligns.append(self.__def_align)
+
+        # Store aligns
+        self.__col_aligns = column_aligns
+
+        # Re-build row-formats on every align reset
+        self.__set_row_formats(*self.__col_widths)
+
+    def row(self, *columns):
+        '''
+        Get formated row with X arguments (num of colums)
+
+        The columns will automatically fix any ANSI escape sequences.
+        In order to do so, the widths will be re-calculated based on the difference
+        between the string length with and without ANSI escape sequences.
+        Afterwards, the colum widths will be restored to their default.
+        This way allows me to use the table with and without ANSI es in strings.
+        '''
+        # store width for restoring (actual copy operation)
+        old_widths = list(self.__col_widths)
+        new_widths = list(self.__col_widths)
+
+        # Find ANSI escape sequence length differences
+        for idx, col in enumerate(columns):
+            # Mismatch found
+            if len(str(col)) != Table.__ansilen(col):
+                # Add difference to new width
+                diff = len(columns[idx]) - Table.__ansilen(columns[idx])
+                new_widths[idx] = new_widths[idx] + diff
+        # Re-build widths
+        self.set_col_widths(*new_widths)
+
+        # Get row format
+        row = self.__row_format.format(*columns)
+
+        # Restore widths
+        self.set_col_widths(*old_widths)
+
+        # Return the row
+        return row
 
     def sep_first(self):
         '''Get first row separator row'''
@@ -376,17 +541,16 @@ class Table(object):
 
 
 ############################################################
-# Helper Functions
+# Class: Fetch
 ############################################################
 
-def logerr(*args):
-    '''Error wrapper for print function'''
-    print(''.join(map(str, args)), file=sys.stderr)
+class Fetch(object):
+    '''Fetch URL from remote'''
 
-
-def random_useragent():
-    '''Returns random useragent'''
-    useragents = [
+    __settings = {
+        'randomize_ua': True,
+    }
+    __useragents = [
         'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)',
         'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)',
         'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)',
@@ -406,27 +570,272 @@ def random_useragent():
         'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
         'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
     ]
-    index = randint(0, len(useragents)-1)
-    return useragents[index]
+
+    def __init__(self, randomize_ua=True):
+        '''Initialize'''
+        self.__settings = {
+            'randomize_ua': randomize_ua
+        }
+
+    def __get_ua(self):
+        '''Get random useragent'''
+        index = randint(0, len(self.__useragents)-1)
+        return self.__useragents[index]
+
+    def fetch(self, url):
+        '''Fetch url and return its body'''
+
+        headers = dict()
+        if self.__settings['randomize_ua']:
+            headers = {'User-Agent': self.__get_ua()}
+
+        req = Request(url, headers=headers)
+        try:
+            response = urlopen(req)
+        except HTTPError:
+            raise
+        except URLError:
+            raise
+        else:
+            return response.read().decode('utf-8')
 
 
-def fetch_url(url):
-    '''Fetch body as text from http url'''
+############################################################
+# Class: Coinwatch
+############################################################
 
-    useragent = random_useragent()
-    req = Request(url, headers={'User-Agent': useragent})
-    try:
-        response = urlopen(req)
-    except HTTPError as err:
-        logerr('[ERR] Cannot connect to %s' % (url))
-        logerr('[ERR] Error code: ', err.code)
-        return ''
-    except URLError as err:
-        logerr('[ERR] Cannot connect to %s' % (url))
-        logerr('[ERR] Reason:', err.reason)
-        return ''
-    else:
-        return response.read().decode('utf-8')
+class Coinwatch(object):
+    '''Coinwatch Class'''
+
+    # General output settings
+    __settings = {
+        'color': False,    # Colorize output?
+        'human': False,    # Humanize number output?
+        'table': 'thick',  # Table border style
+        'cols': dict()     # Columns to display
+    }
+
+    # Specific settings for each column
+    __col_settings = dict()
+
+    def __init__(self, settings, col_settings):
+        '''Set settings'''
+        self.__settings = settings
+        self.__col_settings = col_settings
+
+    @staticmethod
+    def __get_amount(trade):
+        '''Returns amount based on amount, invest and price'''
+
+        if 'amount' in trade:
+            return Num.get(trade['amount'])
+        # amount needs to be calculated
+        invest = Num.get(trade.get('invest', 0))
+        price = Num.get(trade.get('price', 0))
+        return Num.div(invest, price)
+
+    @staticmethod
+    def __get_invest(trade):
+        '''Returns invest based on amount, invest and price'''
+
+        if 'invest' in trade:
+            return Num.get(trade['invest'])
+        # Invest needs to be calculated
+        amount = Num.get(trade.get('amount', 0))
+        price = Num.get(trade.get('price', 0))
+        return Num.mul(price, amount)
+
+    @staticmethod
+    def __get_price(trade):
+        '''Returns price based on amount, invest and price'''
+
+        if 'price' in trade:
+            return Num.get(trade['price'])
+        # Price needs to be calculated
+        invest = Num.get(trade.get('invest', 0))
+        amount = Num.get(trade.get('amount', 0))
+        return Num.div(invest, amount)
+
+    @staticmethod
+    def __extract_trade_row_values(currency, price, trade):
+        '''
+        Extract values of one trade list item, calculate all other necessary
+        values and combine with current price and crypto name.
+        trade: {date, price, invest, amount}
+        '''
+        amount = Coinwatch.__get_amount(trade)
+        invest = Coinwatch.__get_invest(trade)
+        buyprice = Coinwatch.__get_price(trade)
+        nowprice = Num.get(price)
+
+        # Calculate diffprice, wealth, profit and percent
+        diffprice = Num.sub(nowprice, buyprice)
+        wealth = Num.mul(nowprice, amount)
+        profit = Num.sub(wealth, invest)
+        percent = Num.percent(wealth, invest)
+
+        return {
+            'name':      currency,
+            'date':      str(trade.get('date', '-')),
+            'buyprice':  buyprice,
+            'diffprice': diffprice,
+            'nowprice':  nowprice,
+            'amount':    amount,
+            'invest':    invest,
+            'wealth':    wealth,
+            'profit':    profit,
+            'percent':   percent
+        }
+
+    @staticmethod
+    def __humanize_number(number, precision):
+        '''Human readable number format'''
+        number = str(number)
+        fnumber = number.split('.')
+        # Does it have decimal places?
+        if len(fnumber) == 2:
+            # Remove '0' from the rights
+            fnumber[1] = fnumber[1].rstrip('0')
+
+            # Have at least two '0' on the right if the precision is equal or higher
+            while len(fnumber[1]) < 2 and len(fnumber[1]) < precision:
+                fnumber[1] = fnumber[1] + '0'
+            # Fill up with spaces (for alignment)
+            while len(fnumber[1]) < precision:
+                fnumber[1] = fnumber[1] + ' '
+
+            # Reconstruct
+            number = fnumber[0] + '.' + fnumber[1]
+
+        return number
+
+    def __format_trade_row_values(self, values):
+        '''
+        Use extracted trade row value dictionary and format
+        it nicely based on given colum settings.
+        col_settings   Holds settings for each column
+        colorize       Global setting that determines whether to apply colors.
+        '''
+        # Read settings into var for better readability
+        col_settings = self.__col_settings
+        colorize = self.__settings['color']
+        humanize = self.__settings['human']
+
+        clr = Color(colorize)
+        fvalues = dict()
+        for val in values:
+            fvalues[val] = values[val]
+
+            # 1. Rounding
+            if col_settings[val]['prec'] is not None and fvalues[val]:
+                fvalues[val] = Num.to_string(values[val], col_settings[val]['prec'])
+            # 2. Humanize output
+            if humanize:
+                fvalues[val] = Coinwatch.__humanize_number(
+                    fvalues[val],
+                    col_settings[val]['prec']
+                )
+            # 3. Colorize
+            if col_settings[val]['color'] and fvalues[val]:
+                if values[val] < 0:
+                    fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
+                else:
+                    fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
+        return fvalues
+
+    def __format_summary_row_values(self, totals):
+        '''Format and return the summary row'''
+        values = dict()
+        values['name'] = 'TOTAL'
+        values['date'] = ''
+        values['buyprice'] = ''
+        values['diffprice'] = ''
+        values['nowprice'] = ''
+        values['amount'] = ''
+        values['invest'] = totals['invest']
+        values['wealth'] = totals['wealth']
+        values['profit'] = totals['profit']
+        values['percent'] = Num.percent(totals['wealth'], totals['invest'])
+        return self.__format_trade_row_values(values)
+
+    def print_stats(self, currencies, trades):
+        '''Print trading stats in a nice table'''
+
+        # Total accumulated values
+        totals = {
+            'invest': Decimal('0.0'),
+            'wealth': Decimal('0.0'),
+            'profit': Decimal('0.0'),
+        }
+
+        # Get columns to to display and their settings
+        display_columns = self.__settings['cols']
+        col_settings = self.__col_settings
+
+        # Initialize the table
+        tbl = Table(len(display_columns), self.__settings['table'])
+        tbl.set_col_widths(*[col_settings[x]['width'] for x in display_columns])
+        tbl.set_col_aligns(*[col_settings[x]['align'] for x in display_columns])
+
+        # Print headline
+        print(tbl.sep_first())
+        print(tbl.row(*[col_settings[x]['head'] for x in display_columns]))
+        print(tbl.sep())
+
+        for currency in currencies:
+
+            # Do we track a currency?
+            # (Remote currency is found in local config)
+            if currency['id'] in trades:
+
+                name = currency['id']
+
+                # Only proceed if trade happened (defined in config)
+                if trades[name]:
+                    # Loop over trades in each currency
+                    # (Each currency can have multiple trades on different dates/times)
+                    for trade in trades[name]:
+
+                        # Extract and format row values
+                        values = self.__extract_trade_row_values(name, currency['price_usd'], trade)
+                        fvalues = self.__format_trade_row_values(values)
+
+                        # Calculate total accumulated values
+                        totals['invest'] = Num.sum(totals['invest'], values['invest'])
+                        totals['wealth'] = Num.sum(totals['wealth'], values['wealth'])
+                        totals['profit'] = Num.sum(totals['profit'], values['profit'])
+
+                        # Only add column values that are wanted for display
+                        row = []
+                        for col in display_columns:
+                            row.append(fvalues[col])
+
+                        # Print current row
+                        print(tbl.row(*row))
+
+                    # Separate only different coins by row separator
+                    print(tbl.sep())
+
+        # Print overall summary
+        fvalues = self.__format_summary_row_values(totals)
+
+        # Set colums to be displayed
+        row = []
+        for col in display_columns:
+            row.append(fvalues[col])
+
+        print(tbl.row(*row))
+        # Close the table
+        print(tbl.sep_last())
+
+
+############################################################
+# Helper Functions
+############################################################
+
+def logerr(*args):
+    '''Error wrapper for print function'''
+    print(''.join(map(str, args)), file=sys.stderr)
 
 
 def to_yaml(string):
@@ -455,20 +864,6 @@ def to_json(string):
         if data is None:
             return dict()
     return data
-
-
-def percent(total, part, default):
-    '''Calculate percent with default value in case part is zero'''
-
-    if not isinstance(total, Decimal):
-        total = Decimal(str(total))
-    if not isinstance(part, Decimal):
-        part = Decimal(str(part))
-
-    if part > 0 or part < 0:
-        return Decimal('100.00') * total / part
-
-    return default
 
 
 ############################################################
@@ -531,50 +926,6 @@ CONFIGURATION:
           (NAME, NAME, NAME, NAME, ' '.join(COL_AVAILABLE), NAME, NAME))
 
 
-def fdec(number, length, places, settings, colorize):
-    '''
-    Custom decimal format wrapper
-    number:   the decinaml number to format
-    length:   total length including dot and dec places
-    places:   how many decimal places to show
-    settings: Settings
-    colorize: Colorize positive vs. negative numbers
-    returns string
-    '''
-    if not isinstance(number, Decimal):
-        number = Decimal(str(number))
-
-    # Correctly round our Decimal
-    number = number.quantize(Decimal(('{0:.' + str(places) + 'f}').format(1)))
-
-    # Correctly format our Decimal
-    fnumber = ('{0:,.' + str(places) + 'f}').format(number)
-
-    # Remove all decimal places that are 0 and refill them up with spaces
-    # However, keep at least one and max two zeros if using decimal places.
-    # This will cause a more readable output and numbers will look like this:
-    #  22.00
-    #   2.30
-    #   2.31432
-    # 143.0001
-    if places > 0 and settings['human']:
-        fnumber = fnumber.rstrip('0')
-        fnumber = fnumber.split('.')
-        while len(fnumber[1]) < 2 and len(fnumber[1]) < places:
-            fnumber[1] = fnumber[1] + '0'
-        while len(fnumber[1]) < places:
-            fnumber[1] = fnumber[1] + ' '
-
-        fnumber = fnumber[0] + '.' + fnumber[1]
-
-    if colorize and settings['color']:
-        clr = Color(settings['color'])
-        if number < 0:
-            return clr.red() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
-        return clr.green() + ('{:>' + str(length) + '}').format(fnumber) + clr.reset()
-    return ('{:>' + str(length) + '}').format(fnumber)
-
-
 def get_config_path():
     '''Get path of local config file'''
     home = os.path.expanduser('~')
@@ -626,147 +977,32 @@ def validate_config(config):
         sys.exit(0)
 
 
-def format_column(colname, value, settings):
-    '''Format each column'''
+def build_settings(settings, config, default_columns):
+    '''Merge settings from command line and config file'''
 
-    # No special formatting for those
-    if colname == 'name' or colname == 'date':
-        return value
+    # Apply column settings
+    if settings['cols']:
+        # Set via cmd args, all good
+        pass
+    elif 'columns' in config['config'] and config['config']['columns']:
+        # Available in configuration file
+        settings['cols'] = config['config']['columns'].split()
+    else:
+        # Nowhere set, use defaults
+        settings['cols'] = default_columns
 
-    # Now we make it really nice and tidy
-    color = bool(colname == 'profit' or colname == 'diffprice')
-    return fdec(
-        value,
-        COL_SETTINGS[colname]['width'],
-        COL_SETTINGS[colname]['prec'],
-        settings,
-        color
-    )
+    # Apply table border settings
+    if settings['table']:
+        # Set via cmd args, all good
+        pass
+    elif 'table' in config['config'] and config['config']['table']:
+        # Available in configuration file
+        settings['table'] = config['config']['table']
+    else:
+        # Nowhere set, use defaults
+        settings['table'] = 'thin'
 
-
-def print_stats(currencies, trades, settings):
-    '''Print trading stats in a nice table'''
-
-    # Total accumulated values
-    totals = {
-        'invest': Decimal('0.0'),
-        'wealth': Decimal('0.0'),
-        'profit': Decimal('0.0'),
-    }
-
-    # Get columns to display
-    display_columns = settings['cols']
-
-    # Initialize the table
-    tbl = Table(len(display_columns), settings['table'])
-    tbl.set_col_widths(*[COL_SETTINGS[x]['width'] for x in display_columns])
-
-    # Print headline
-    print(tbl.sep_first())
-    print(tbl.row(*[COL_SETTINGS[x]['head'] for x in display_columns]))
-    print(tbl.sep())
-
-    for currency in currencies:
-
-        # Do we track a currency?
-        # (Remote currency is found in local config)
-        if currency['id'] in trades:
-
-            name = currency['id']
-
-            # Only proceed if trade happened (defined in config)
-            if trades[name]:
-                # Loop over trades in each currency
-                # (Each currency can have multiple trades on different dates/times)
-                for trade in trades[name]:
-
-                    # Check calculation options based on values found in config
-                    # 1. amount+invest
-                    # 2. amount+price
-                    # 3. invest+price
-                    if 'amount' in trade and 'invest' in trade:
-                        amount = Decimal(str(trade.get('amount', '0.0')))
-                        invest = Decimal(str(trade.get('invest', '0.0')))
-                        if amount > 0 or amount < 0:
-                            buyprice = invest / amount
-                        else:
-                            buyprice = Decimal('0.0')
-                    elif 'amount' in trade and 'price' in trade:
-                        amount = Decimal(str(trade.get('amount', '0.0')))
-                        buyprice = Decimal(str(trade.get('price', '0.0')))
-                        invest = buyprice * amount
-                    elif 'invest' in trade and 'price' in trade:
-                        invest = Decimal(str(trade.get('invest', '0.0')))
-                        buyprice = Decimal(str(trade.get('price', '0.0')))
-                        if buyprice > 0 or buyprice < 0:
-                            amount = invest / buyprice
-                        else:
-                            amount = Decimal('0.0')
-                    else:
-                        amount = Decimal('0.0')
-                        invest = Decimal('0.0')
-                        buyprice = Decimal('0.0')
-
-                    # Extract values from remote API
-                    nowprice = Decimal(str(currency['price_usd']))
-
-                    # Calculate diffprice, wealth and profit
-                    diffprice = nowprice - buyprice
-                    wealth = nowprice * amount
-                    profit = wealth - invest
-
-                    # Calculate total accumulated values
-                    totals['invest'] += invest
-                    totals['wealth'] += wealth
-                    totals['profit'] += profit
-
-                    # Add all available row values into dict
-                    values = dict()
-                    values['name'] = format_column('name', name, settings)
-                    values['date'] = format_column('date', str(trade.get('date', '-')), settings)
-                    values['buyprice'] = format_column('buyprice', buyprice, settings)
-                    values['diffprice'] = format_column('diffprice', diffprice, settings)
-                    values['nowprice'] = format_column('nowprice', nowprice, settings)
-                    values['amount'] = format_column('amount', amount, settings)
-                    values['invest'] = format_column('invest', invest, settings)
-                    values['wealth'] = format_column('wealth', wealth, settings)
-                    values['profit'] = format_column('profit', profit, settings)
-                    values['percent'] = format_column('percent',
-                                                      percent(wealth, invest, 0), settings)
-
-                    # Only add column values that are wanted for display
-                    row = []
-                    for col in display_columns:
-                        row.append(values[col])
-
-                    # Print current row
-                    print(tbl.row(*row))
-
-                # Separate only different coins by row separator
-                print(tbl.sep())
-
-    # Print overall summary
-    values = dict()
-    values['name'] = 'TOTAL'
-    values['date'] = ''
-    values['buyprice'] = ''
-    values['diffprice'] = ''
-    values['nowprice'] = ''
-    values['amount'] = ''
-    values['invest'] = format_column('invest', totals['invest'], settings)
-    values['wealth'] = format_column('wealth', totals['wealth'], settings)
-    values['profit'] = format_column('profit', totals['profit'], settings)
-    values['percent'] = format_column('percent',
-                                      percent(totals['wealth'], totals['invest'], 0), settings)
-
-    # Set colums to be displayed
-    row = []
-    for col in display_columns:
-        row.append(values[col])
-
-    print(tbl.row(*row))
-    # Close the table
-    print(tbl.sep_last())
+    return settings
 
 
 def bootstrap():
@@ -874,33 +1110,30 @@ def main(argv):
     config = read_config(settings['path'])
     validate_config(config)
 
-    # Apply column settings
-    if settings['cols']:
-        # Set via cmd args, all good
-        pass
-    elif 'columns' in config['config'] and config['config']['columns']:
-        # Available in configuration file
-        settings['cols'] = config['config']['columns'].split()
-    else:
-        # Nowhere set, use defaults
-        settings['cols'] = COL_DEFAULT
-
-    # Apply table border settings
-    if settings['table']:
-        # Set via cmd args, all good
-        pass
-    elif 'table' in config['config'] and config['config']['table']:
-        # Available in configuration file
-        settings['table'] = config['config']['table']
-    else:
-        # Nowhere set, use defaults
-        settings['table'] = 'thin'
+    # Merge cmd args and config file settings
+    settings = build_settings(settings, config, COL_DEFAULT)
 
     # Get remote price info
-    currencies = to_json(fetch_url(API_URL))
+    url = Fetch(True)
+    try:
+        currencies = to_json(url.fetch(API_URL))
+    except HTTPError as err:
+        logerr('[ERR] Cannot connect to %s' % (API_URL))
+        logerr('[ERR] Error code: ', err.code)
+        sys.exit(2)
+    except URLError as err:
+        logerr('[ERR] Cannot connect to %s' % (API_URL))
+        logerr('[ERR] Reason:', err.reason)
+        sys.exit(2)
 
-    # Show trading stats
-    print_stats(currencies, config['trades'], settings)
+    # Initialize and run Coinwatch
+    cowa = Coinwatch({
+        'color': settings['color'],  # Colorize output?
+        'human': settings['human'],  # Humanize number output?
+        'table': settings['table'],  # Table border style
+        'cols': settings['cols']     # Columns to display
+    }, COL_SETTINGS)
+    cowa.print_stats(currencies, config['trades'])
 
 
 ############################################################
