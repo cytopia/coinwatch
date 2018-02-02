@@ -231,7 +231,9 @@ class Num(object):
     @staticmethod
     def __num(number):
         '''Convert to correct format'''
-        return Decimal(str(number))
+        with localcontext() as ctx:
+            ctx.prec = Num.__precision
+            return Decimal(str(number))
 
     @staticmethod
     def __zero():
