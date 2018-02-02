@@ -539,6 +539,66 @@ class Table(object):
 
 
 ############################################################
+# Class: Fetch
+############################################################
+
+class Fetch(object):
+    '''Fetch URL from remote'''
+
+    __settings = {
+        'randomize_ua': True,
+    }
+    __useragents = [
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)',
+        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.7.01001)',
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 5.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0',
+        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1',
+        'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20100101 Firefox/5.02',
+        'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
+        'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
+        'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
+    ]
+
+    def __init__(self, randomize_ua=True):
+        '''Initialize'''
+        self.__settings = {
+            'randomize_ua': randomize_ua
+        }
+
+    def __get_ua(self):
+        '''Get random useragent'''
+        index = randint(0, len(self.__useragents)-1)
+        return self.__useragents[index]
+
+    def fetch(self, url):
+        '''Fetch url and return its body'''
+
+        headers = dict()
+        if self.__settings['randomize_ua']:
+            headers = {'User-Agent': self.__get_ua()}
+
+        req = Request(url, headers=headers)
+        try:
+            response = urlopen(req)
+        except HTTPError:
+            raise
+        except URLError:
+            raise
+        else:
+            return response.read().decode('utf-8')
+
+
+############################################################
 # Class: Coinwatch
 ############################################################
 
@@ -776,51 +836,6 @@ def logerr(*args):
     print(''.join(map(str, args)), file=sys.stderr)
 
 
-def random_useragent():
-    '''Returns random useragent'''
-    useragents = [
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.7.01001)',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 5.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20100101 Firefox/5.02',
-        'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
-        'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
-    ]
-    index = randint(0, len(useragents)-1)
-    return useragents[index]
-
-
-def fetch_url(url):
-    '''Fetch body as text from http url'''
-
-    useragent = random_useragent()
-    req = Request(url, headers={'User-Agent': useragent})
-    try:
-        response = urlopen(req)
-    except HTTPError as err:
-        logerr('[ERR] Cannot connect to %s' % (url))
-        logerr('[ERR] Error code: ', err.code)
-        return ''
-    except URLError as err:
-        logerr('[ERR] Cannot connect to %s' % (url))
-        logerr('[ERR] Reason:', err.reason)
-        return ''
-    else:
-        return response.read().decode('utf-8')
-
-
 def to_yaml(string):
     '''Convert string to yaml'''
     try:
@@ -960,6 +975,34 @@ def validate_config(config):
         sys.exit(0)
 
 
+def build_settings(settings, config, default_columns):
+    '''Merge settings from command line and config file'''
+
+    # Apply column settings
+    if settings['cols']:
+        # Set via cmd args, all good
+        pass
+    elif 'columns' in config['config'] and config['config']['columns']:
+        # Available in configuration file
+        settings['cols'] = config['config']['columns'].split()
+    else:
+        # Nowhere set, use defaults
+        settings['cols'] = default_columns
+
+    # Apply table border settings
+    if settings['table']:
+        # Set via cmd args, all good
+        pass
+    elif 'table' in config['config'] and config['config']['table']:
+        # Available in configuration file
+        settings['table'] = config['config']['table']
+    else:
+        # Nowhere set, use defaults
+        settings['table'] = 'thin'
+
+    return settings
+
+
 def bootstrap():
     '''Bootstrap the application'''
     conf_file = get_config_path()
@@ -1065,30 +1108,21 @@ def main(argv):
     config = read_config(settings['path'])
     validate_config(config)
 
-    # Apply column settings
-    if settings['cols']:
-        # Set via cmd args, all good
-        pass
-    elif 'columns' in config['config'] and config['config']['columns']:
-        # Available in configuration file
-        settings['cols'] = config['config']['columns'].split()
-    else:
-        # Nowhere set, use defaults
-        settings['cols'] = COL_DEFAULT
-
-    # Apply table border settings
-    if settings['table']:
-        # Set via cmd args, all good
-        pass
-    elif 'table' in config['config'] and config['config']['table']:
-        # Available in configuration file
-        settings['table'] = config['config']['table']
-    else:
-        # Nowhere set, use defaults
-        settings['table'] = 'thin'
+    # Merge cmd args and config file settings
+    settings = build_settings(settings, config, COL_DEFAULT)
 
     # Get remote price info
-    currencies = to_json(fetch_url(API_URL))
+    url = Fetch(True)
+    try:
+        currencies = to_json(url.fetch(API_URL))
+    except HTTPError as err:
+        logerr('[ERR] Cannot connect to %s' % (API_URL))
+        logerr('[ERR] Error code: ', err.code)
+        sys.exit(2)
+    except URLError as err:
+        logerr('[ERR] Cannot connect to %s' % (API_URL))
+        logerr('[ERR] Reason:', err.reason)
+        sys.exit(2)
 
     # Initialize and run Coinwatch
     cowa = Coinwatch({
