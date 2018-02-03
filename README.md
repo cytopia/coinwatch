@@ -25,6 +25,13 @@ coinwatch
 # Specify different profile/config
 coinwatch -c ~/path/to/conf.yml
 
+# Different columns and order
+coinwatch -r "coin buyprice nowprice wealth invest profit"
+coinwatch -r "coin date nowprice wealth profit percent"
+
+# Specify sort and order
+coinwatch -s profit -o desc
+
 # Disable colorized output
 coinwatch -n
 
@@ -32,10 +39,6 @@ coinwatch -n
 coinwatch -t ascii
 coinwatch -t thin
 coinwatch -t thick
-
-# Different columns and order
-coinwatch -r "coin buyprice nowprice wealth invest profit"
-coinwatch -r "coin date nowprice wealth profit percent"
 
 # Alternative number format
 coinwatch -h
@@ -78,6 +81,12 @@ The configuration file is build up like this:
 ```yml
 # Configure coinwatch
 config:
+  # Specify the column to sort this table
+  # Overwrite via -s <column>
+  sort: name
+  # Specify the sort order (asc or desc)
+  # Overwrite via -o desc
+  order: asc
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
@@ -193,6 +202,13 @@ OPTIONS:
                    -r "coin buyprice nowprice amount wealth"
                  Default:
                    -r "coin date buyprice nowprice amount invest wealth profit percent"
+  -s, --sort     Specify the column name to sort this table.
+                 See above for available columns.
+                 The table can also be sorted against columns that are not displayed.
+                 The default is: 'name'
+  -o, --order    Specify the sorting order.
+                 Valid orders: 'asc' and 'desc'.
+                 The default order is 'asc'.
   -t, --table    Specify different table border.
                  Available values: 'thin', 'thick' and 'ascii'.
                  The default is 'thin'.
