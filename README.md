@@ -82,8 +82,10 @@ The configuration file is build up like this:
 # Configure coinwatch
 config:
   # Specify the column to sort this table
+  # Overwrite via -s <column>
   sort: name
   # Specify the sort order (asc or desc)
+  # Overwrite via -o desc
   order: asc
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
