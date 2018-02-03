@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.8'
+VERSION = '0.9'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -425,7 +425,7 @@ class Table(object):
     def __remove_ansi(string):
         '''Remove ANSI escape sequences and spaces'''
         regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
-        return regex.sub('', str(string)).strip()
+        return regex.sub('', str(string))
 
     @staticmethod
     def __ansilen(string):
