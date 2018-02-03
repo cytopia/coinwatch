@@ -28,6 +28,21 @@
 #     invest: how much money spent on all coins
 #     price:  price for one coin
 
+# Configure coinwatch
+config:
+  # Specify the column to sort this table
+  sort: name
+  # Specify the sort order (asc or desc)
+  order: desc
+  # Configure what columns to display and in what order.
+  # To see all available columns view help: $ coinwatch --help
+  # Columns specified via command line (-r) take precedence
+  columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  # Specify your table border style
+  # Available values: thin, thick and ascii
+  # Use ascii if you want to further process the output of this application
+  table: thin
+
 trades:
   # bitcoin trades show all three different ways of specifying purchases.
   bitcoin:

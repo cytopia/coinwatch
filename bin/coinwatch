@@ -42,6 +42,8 @@ import getopt
 import sys
 import re
 import json
+
+# External dependencies
 import yaml
 
 # Force Python2 to use utf8
@@ -60,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.7'
+VERSION = '0.8'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -144,6 +146,10 @@ EXAMPLE_CONFIG = '''---
 
 # Configure coinwatch
 config:
+  # Specify the column to sort this table
+  sort: name
+  # Specify the sort order (asc or desc)
+  order: asc
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
@@ -313,21 +319,36 @@ class Num(object):
 class Table(object):
     '''Custom command line table drawer class'''
 
-    # Default column width if not set
-    __def_width = 10
+    # Table content
+    __data = {
+        'rows': [],   # The actual rows of the table (sortable and groupable)
+        'heads': [],  # Header rows (not sortable, not groupable)
+        'foots': []   # Footer rows (not sortable, not groupable)
+    }
 
-    # Default align if not set per column
-    __def_align = '<'  # Valid: '<' (left), '=' (center), '>' (right)
+    # Defaults if not set
+    __defaults = {
+        'width': 10,      # Default column width
+        'align': '<',     # Default column alignt.('<': left, '=': center, '>':right)
+        'border': 'thin'  # Default table border
+    }
 
-    # Col formatter
-    __col_widths = []
-    __col_aligns = []
+    # Name of columns that can be added to the table.
+    # This is set in __init__
+    # Format:
+    # ['colname1', 'colname2']
+    __columns = []
 
-    # Row formatter used by format()
-    __row_format = None
-    __sep_format = None
-    __top_format = None
-    __bot_format = None
+    # Width and align settings for columns
+    # Format:
+    # {
+    #    'colname1': {'width': X, 'align': '<'},
+    #    'colname2': {'width': X, 'align': '<'}
+    # }
+    __col_settings = dict()
+
+    # Actual chosen border symbols (see __init__)
+    __sym = dict()
 
     # Available table border styles
     __sym_border = {
@@ -372,13 +393,19 @@ class Table(object):
         }
     }
 
-    # Actual chosen border symbols (see __init__)
-    __sym = dict()
+    def __init__(self, columns, border):
+        '''
+        Initializes the Table object
 
-    def __init__(self, rows, border):
-        '''Defines the table with number of rows and border style'''
-        # Store rows
-        self.__rows = rows
+        columns   list of coumn names. E.g.: ['colname1', 'colname2', 'colname3']
+                  This specifies the initial order or columns as well as
+                  the number of columns.
+                  Those names are later used to change order, width, grouping
+                  as well as what columns to actually display.
+        border    What table border to use
+        '''
+        # Store number of columns
+        self.__columns = columns
 
         # Set table border style
         if border == 'thin':
@@ -392,152 +419,240 @@ class Table(object):
         self.set_col_aligns()
         self.set_col_widths()
 
-    def __set_row_formats(self, *widths):
-        '''
-        This prive function sets the row formatter strings.
-        It has to be re-called everytime the column widths change.
-        '''
-        # Get symbols in local var for better readability
-        sym = self.__sym
-
-        # Create row format
-        row = sym['ver-sep']
-        for idx, width in enumerate(widths):
-            # Get current alignment
-            if self.__col_aligns[idx] == '<':
-                align = '<'
-            elif self.__col_aligns[idx] == '=':
-                align = '='
-            elif self.__col_aligns[idx] == '>':
-                align = '>'
-            else:
-                align = self.__def_align
-
-            row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
-
-        self.__row_format = row
-
-        # Create first line separator format (opens table)
-        row = sym['top-lft']
-        for width in widths:
-            row += sym['hor-sep'] + \
-                   '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
-                   sym['hor-sep'] + sym['top-cen']
-
-        self.__top_format = row[:-1] + sym['top-rgt']  # Adjust last char
-
-        # Create normal line separator format (between rows)
-        row = sym['mid-lft']
-        for width in widths:
-            row += sym['hor-sep'] + \
-                   '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
-                   sym['hor-sep'] + sym['mid-cen']
-
-        self.__sep_format = row[:-1] + sym['mid-rgt']  # Adjust last char
-
-        # Create last line separator format (closes table)
-        row = sym['bot-lft']
-        for width in widths:
-            row += sym['hor-sep'] + \
-                   '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
-                   sym['hor-sep'] + sym['bot-cen']
-
-        self.__bot_format = row[:-1] + sym['bot-rgt']  # Adjust last char
-
     @staticmethod
     def __ansilen(string):
         '''Get string length without ansi escape codes'''
         regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
         return len(regex.sub('', str(string)))
 
-    def set_col_widths(self, *widths):
+    def __sort_rows(self, column=None, reverse=False):
+        '''Sort all data rows (excluding headers and footers by given column)'''
+        # Only sort if the sort key actually exists
+
+        def csort(x, y):
+            '''Custom sort function'''
+            # Remove ANSI escape sequences and spaces
+            regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
+            x = regex.sub('', str(x[column])).strip()
+            y = regex.sub('', str(y[column])).strip()
+            try:
+                return cmp(float(x), float(y))
+            except ValueError:
+                pass
+            return cmp(x, y)
+
+        if column in self.__columns:
+            self.__data['rows'] = sorted(self.__data['rows'], cmp=csort, reverse=reverse)
+
+    def __get_row(self, display_columns, data):
+        '''
+        Returns the formatted row string by applying format()
+
+        display_columns  List of columns to actually display.
+                         Required to know know how many columns are in one row.
+        data             List of columns. This is required to calculate
+                         their width without ANSI escape sequences in order to properly
+                         re-calculate the width of a column.
+        '''
+        # Get symbols in local var for better readability
+        sym = self.__sym
+
+        # Start with left cell separator
+        row = sym['ver-sep']
+
+        # Create row format with correct alignment and width
+        for column in display_columns:
+            # 1. Get alignment
+            align = self.__col_settings[column]['align']
+            # 2. Get width
+            width = self.__col_settings[column]['width']
+            # 3. Adjust width in case our string contains ANSI escape sequences
+            if len(str(data[column])) != Table.__ansilen(data[column]):
+                diff = len(str(data[column])) - Table.__ansilen(data[column])
+                width += diff
+
+            row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
+
+        return row.format(*[data[col] for col in display_columns])
+
+    def __get_sep(self, display_columns, position):
+        '''
+        Returns the formatted separator string by applying format().
+
+        display_columns  List of columns to actually display.
+                         Required to know know how many columns are in one row.
+
+        position         Where is the separator located?
+                         'top': First separator that starts the table
+                         'mid': Separator between rows
+                         'bot': Last separator that closes the table
+        '''
+        # Get symbols in local var for better readability
+        sym = self.__sym
+
+        # Start with left cell separator
+        row = sym[position + '-lft']
+
+        # Create row format based on columns to display
+        for column in display_columns:
+            # 1. Get width
+            width = self.__col_settings[column]['width']
+            row += sym['hor-sep'] + \
+                '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
+                sym['hor-sep'] + sym[position + '-cen']
+
+        row = row[:-1] + sym[position + '-rgt']  # Adjust last char
+        return row.format(*['' for i in range(len(display_columns))])
+
+    def set_col_widths(self, widths=dict()):
         '''
         Set colum widths.
         If colum width is not set, default_width will be used.
+
+        widths   Dictionary of widths.
+                 E.g.: list('name': 10, 'col2': 20)
+                 It must match the index names specified in __init__
         '''
-        column_widths = []
+        # Loop over available columns and see if width for it is specified.
+        # If not specified for a column, use the Class's default width.
+        for col in self.__columns:
+            if col in widths:
+                if col in self.__col_settings:
+                    self.__col_settings[col]['width'] = widths[col]
+                else:
+                    self.__col_settings[col] = {'width': widths[col]}
+            else:
+                if col in self.__col_settings:
+                    self.__col_settings[col]['width'] = self.__defaults['width']
+                else:
+                    self.__col_settings[col] = {'width': self.__defaults['width']}
 
-        # Store colum widths in array
-        for width in widths:
-            column_widths.append(width)
-
-        # Fill missing widths with default widths:
-        if len(widths) < self.__rows:
-            for i in range((self.__rows - len(widths))):
-                column_widths.append(self.__def_width)
-
-        # Store widths
-        self.__col_widths = column_widths
-
-        # Re-build row-formats on every width reset
-        self.__set_row_formats(*column_widths)
-
-    def set_col_aligns(self, *aligns):
+    def set_col_aligns(self, aligns=dict()):
         '''
         Set colum alignments.
         If colum align is not set, default_align will be used.
+
+        aligns   Dictionary of aligns.
+                 E.g.: list('name': '<', 'col2': '=')
+                 It must match the index names specified in __init__
         '''
-        column_aligns = []
+        # Loop over available columns and see if align for it is specified.
+        # If not specified for a column, use the Class's default align.
+        for col in self.__columns:
+            if col in aligns:
+                if col in self.__col_settings:
+                    self.__col_settings[col]['align'] = aligns[col]
+                else:
+                    self.__col_settings[col] = {'align': aligns[col]}
+            else:
+                if col in self.__col_settings:
+                    self.__col_settings[col]['align'] = self.__defaults['align']
+                else:
+                    self.__col_settings[col] = {'align': self.__defaults['align']}
 
-        # Store colum widths in array
-        for align in aligns:
-            column_aligns.append(align)
-
-        # Fill missing widths with default widths:
-        if len(aligns) < self.__rows:
-            for i in range((self.__rows - len(aligns))):
-                column_aligns.append(self.__def_align)
-
-        # Store aligns
-        self.__col_aligns = column_aligns
-
-        # Re-build row-formats on every align reset
-        self.__set_row_formats(*self.__col_widths)
-
-    def row(self, *columns):
+    def add_row(self, columns):
         '''
-        Get formated row with X arguments (num of colums)
-
-        The columns will automatically fix any ANSI escape sequences.
-        In order to do so, the widths will be re-calculated based on the difference
-        between the string length with and without ANSI escape sequences.
-        Afterwards, the colum widths will be restored to their default.
-        This way allows me to use the table with and without ANSI es in strings.
+        Add a new row to the table
+        columns  Dictionary of columns to add to a row.
+                 E.g.: list('name': val, 'col2': val)
+                 It must match the index names specified in __init__
         '''
-        # store width for restoring (actual copy operation)
-        old_widths = list(self.__col_widths)
-        new_widths = list(self.__col_widths)
+        self.__data['rows'].append(columns)
 
-        # Find ANSI escape sequence length differences
-        for idx, col in enumerate(columns):
-            # Mismatch found
-            if len(str(col)) != Table.__ansilen(col):
-                # Add difference to new width
-                diff = len(columns[idx]) - Table.__ansilen(columns[idx])
-                new_widths[idx] = new_widths[idx] + diff
-        # Re-build widths
-        self.set_col_widths(*new_widths)
+    def add_header_row(self, columns):
+        '''
+        Add a new headline row to the table
+        columns  Dictionary of columns to add to a row.
+                 E.g.: list('name': val, 'col2': val)
+                 It must match the index names specified in __init__
+        '''
+        self.__data['heads'].append(columns)
 
-        # Get row format
-        row = self.__row_format.format(*columns)
+    def add_footer_row(self, columns):
+        '''
+        Add a new footer row to the table
+        columns  Dictionary of columns to add to a row.
+                 E.g.: list('name': val, 'col2': val)
+                 It must match the index names specified in __init__
+        '''
+        self.__data['foots'].append(columns)
 
-        # Restore widths
-        self.set_col_widths(*old_widths)
+    def draw(self, columns=None, sort_col=None, sort_order='asc', group_col=None):
+        '''
+        Draw the table.
 
-        # Return the row
-        return row
+        columns         List of columns to draw in the order it is in the list.
+                        If not specified, all columns will be drawn in the order
+                        it was specified during __init__.
+        sort_col        Sort columns by this column name.
+                        If not specified, no sorting will be done.
+        sort_order      Sort oder 'asc' or 'desc'.
+        group_col       Group columns by this column name.
+                        If not specified, no grouping will be done.
+        '''
+        print(
+            self.get(columns, sort_col, sort_order, group_col)
+        )
 
-    def sep_first(self):
-        '''Get first row separator row'''
-        return self.__top_format.format(*['' for i in range(self.__rows)])
+    def get(self, columns=None, sort_col=None, sort_order='asc', group_col=None):
+        '''
+        Return the table as string.
 
-    def sep(self):
-        '''Get row separator row'''
-        return self.__sep_format.format(*['' for i in range(self.__rows)])
+        columns         List of columns to get in the order it is in the list.
+                        If not specified, all columns will be used in the order
+                        it was specified during __init__.
+        sort_col        Sort columns by this column name.
+                        If not specified, no sorting will be done.
+        sort_order      Sort oder 'asc' or 'desc'.
+        group_col       Group columns by this column name.
+                        If not specified, no grouping will be done.
+        '''
 
-    def sep_last(self):
-        '''Get last row separator row'''
-        return self.__bot_format.format(*['' for i in range(self.__rows)])
+        # What columns to display and in what order
+        display_columns = []
+        if isinstance(columns, list) and columns:
+            display_columns = columns
+        else:
+            display_columns = self.__columns
+
+        # Get seperators
+        sep_top = self.__get_sep(display_columns, 'top')
+        sep_mid = self.__get_sep(display_columns, 'mid')
+        sep_bot = self.__get_sep(display_columns, 'bot')
+
+        # Sort rows
+        if sort_order == 'asc':
+            self.__sort_rows(sort_col, False)
+        else:
+            self.__sort_rows(sort_col, True)
+
+        # TODO: Implement grouping
+
+        rows = []
+        for row in self.__data['rows']:
+            rows.append(self.__get_row(display_columns, row))
+
+        heads = []
+        for row in self.__data['heads']:
+            heads.append(self.__get_row(display_columns, row))
+
+        foots = []
+        for row in self.__data['foots']:
+            foots.append(self.__get_row(display_columns, row))
+
+        # Build the table
+        table = sep_top + '\n'
+
+        if heads:
+            table += ('\n' + sep_mid + '\n').join(heads) + '\n' + sep_mid + '\n'
+        if rows:
+            table += ('\n' + sep_mid + '\n').join(rows) + '\n'
+        if foots:
+            table += sep_mid + '\n' + ('\n' + sep_mid + '\n').join(foots) + '\n'
+
+        table += sep_bot
+
+        return table
 
 
 ############################################################
@@ -611,8 +726,10 @@ class Coinwatch(object):
     __settings = {
         'color': False,    # Colorize output?
         'human': False,    # Humanize number output?
+        'sort':  'name',   # Default sort column
+        'order': 'asc',    # Default sort order
         'table': 'thick',  # Table border style
-        'cols': dict()     # Columns to display
+        'cols':  dict()    # Columns to display
     }
 
     # Specific settings for each column
@@ -773,14 +890,12 @@ class Coinwatch(object):
         col_settings = self.__col_settings
 
         # Initialize the table
-        tbl = Table(len(display_columns), self.__settings['table'])
-        tbl.set_col_widths(*[col_settings[x]['width'] for x in display_columns])
-        tbl.set_col_aligns(*[col_settings[x]['align'] for x in display_columns])
+        tbl = Table(COL_AVAILABLE, self.__settings['table'])
+        tbl.set_col_widths({a: col_settings[a]['width'] for a in col_settings.keys()})
+        tbl.set_col_aligns({a: col_settings[a]['align'] for a in col_settings.keys()})
 
-        # Print headline
-        print(tbl.sep_first())
-        print(tbl.row(*[col_settings[x]['head'] for x in display_columns]))
-        print(tbl.sep())
+        # # Add headline
+        tbl.add_header_row({a: col_settings[a]['head'] for a in col_settings.keys()})
 
         for currency in currencies:
 
@@ -800,33 +915,22 @@ class Coinwatch(object):
                         values = self.__extract_trade_row_values(name, currency['price_usd'], trade)
                         fvalues = self.__format_trade_row_values(values)
 
+                        # Add row
+                        tbl.add_row(fvalues)
+
                         # Calculate total accumulated values
                         totals['invest'] = Num.sum(totals['invest'], values['invest'])
                         totals['wealth'] = Num.sum(totals['wealth'], values['wealth'])
                         totals['profit'] = Num.sum(totals['profit'], values['profit'])
 
-                        # Only add column values that are wanted for display
-                        row = []
-                        for col in display_columns:
-                            row.append(fvalues[col])
-
-                        # Print current row
-                        print(tbl.row(*row))
-
-                    # Separate only different coins by row separator
-                    print(tbl.sep())
-
-        # Print overall summary
+        # Get overall summary
         fvalues = self.__format_summary_row_values(totals)
 
-        # Set colums to be displayed
-        row = []
-        for col in display_columns:
-            row.append(fvalues[col])
+        # Add footer statistics
+        tbl.add_footer_row(fvalues)
 
-        print(tbl.row(*row))
-        # Close the table
-        print(tbl.sep_last())
+        # Draw table
+        tbl.draw(display_columns, self.__settings['sort'], self.__settings['order'])
 
 
 ############################################################
@@ -880,7 +984,7 @@ def print_version():
 
 def print_help():
     '''Show program help'''
-    print('''Usage: %s [-crtnhv]
+    print('''Usage: %s [-crsotnhv]
        %s [--help]
        %s [--version]
 
@@ -903,6 +1007,13 @@ OPTIONS:
                  Examples:
                    -r "coin date profit percent"
                    -r "coin buyprice nowprice amount wealth"
+  -s, --sort     Specify the column name to sort this table.
+                 See above for available columns.
+                 The table can also be sorted against columns that are not displayed.
+                 The default is 'name'.
+  -o, --order    Specify the sorting order.
+                 Valid orders: 'asc' and 'desc'.
+                 The default order is 'asc'.
   -t, --table    Specify different table border. In case you need to process
                  the output of this tool use 'ascii'.
                  Available values: 'thin', 'thick' and 'ascii'.
@@ -961,9 +1072,23 @@ def validate_config(config):
         if 'columns' in config['config'] and config['config']['columns']:
             for col in config['config']['columns'].split(' '):
                 if col not in COL_AVAILABLE:
-                    logerr('[ERR] Invalid colum name in config: \'' + col + '\'')
-                    logerr('[ERR] Valid names: ' + ', '.join(COL_AVAILABLE))
+                    logerr('[ERR] Invalid column name in config: \'' + col + '\'')
+                    logerr('[ERR] Valid column names: ' + ', '.join(COL_AVAILABLE))
                     sys.exit(2)
+        # Sort
+        if 'sort' in config['config'] and config['config']['sort']:
+            sort = config['config']['sort']
+            if sort not in COL_AVAILABLE:
+                logerr('[ERR] Invalid sort column name in config: \'' + sort + '\'')
+                logerr('[ERR] Valid sort column names: ' + ', '.join(COL_AVAILABLE))
+                sys.exit(2)
+        # Order
+        if 'order' in config['config'] and config['config']['order']:
+            order = config['config']['order']
+            if order not in ('asc', 'desc'):
+                logerr('[ERR] Invalid sort order in config: \'' + order + '\'')
+                logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
+                sys.exit(2)
         # Table border
         if 'table' in config['config'] and config['config']['table']:
             if config['config']['table'] not in ('thin', 'thick', 'ascii'):
@@ -977,10 +1102,10 @@ def validate_config(config):
         sys.exit(0)
 
 
-def build_settings(settings, config, default_columns):
+def build_settings(settings, config, default_columns, default_sort, default_order):
     '''Merge settings from command line and config file'''
 
-    # Apply column settings
+    # Apply columns to display
     if settings['cols']:
         # Set via cmd args, all good
         pass
@@ -990,6 +1115,28 @@ def build_settings(settings, config, default_columns):
     else:
         # Nowhere set, use defaults
         settings['cols'] = default_columns
+
+    # Apply column sort
+    if settings['sort']:
+        # Set via cmd args, all good
+        pass
+    elif 'sort' in config['config'] and config['config']['sort']:
+        # Available in configuration file
+        settings['sort'] = config['config']['sort']
+    else:
+        # Nowhere set, use defaults
+        settings['sort'] = default_sort
+
+    # Apply column sort order
+    if settings['order']:
+        # Set via cmd args, all good
+        pass
+    elif 'order' in config['config'] and config['config']['order']:
+        # Available in configuration file
+        settings['order'] = config['config']['order']
+    else:
+        # Nowhere set, use defaults
+        settings['order'] = default_order
 
     # Apply table border settings
     if settings['table']:
@@ -1024,11 +1171,13 @@ def parse_args(argv, settings):
 
     # Define command line options
     try:
-        opts, argv = getopt.getopt(argv, 'c:r:t:nhv', [
+        opts, argv = getopt.getopt(argv, 'c:r:s:o:t:nhv', [
             'version',
             'help',
             'config=',
             'row=',
+            'sort=',
+            'order=',
             'table=',
             'nocolor',
             'human',
@@ -1053,10 +1202,24 @@ def parse_args(argv, settings):
         elif opt in ('-r', '--row'):
             for col in arg.split(' '):
                 if col not in COL_AVAILABLE:
-                    logerr('[ERR] Invalid colum name: \'' + col + '\'')
-                    logerr('[ERR] Valid names: ' + ', '.join(COL_AVAILABLE))
+                    logerr('[ERR] Invalid column name: \'' + col + '\'')
+                    logerr('[ERR] Valid column names: ' + ', '.join(COL_AVAILABLE))
                     sys.exit(2)
             settings['cols'] = arg.split()
+        # Get column to sort
+        elif opt in ('-s', '--sort'):
+            if arg not in COL_AVAILABLE:
+                logerr('[ERR] Invalid sort column name: \'' + arg + '\'')
+                logerr('[ERR] Valid sort column names: ' + ', '.join(COL_AVAILABLE))
+                sys.exit(2)
+            settings['sort'] = arg
+        # Get sort order
+        elif opt in ('-o', '--order'):
+            if arg not in ('asc', 'desc'):
+                logerr('[ERR] Invalid sort order: \'' + arg + '\'')
+                logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
+                sys.exit(2)
+            settings['order'] = arg
         # Choose table border
         elif opt in ('-t', '--table'):
             if arg not in('thin', 'thick', 'ascii'):
@@ -1097,6 +1260,8 @@ def main(argv):
         'human':   False,    # Human readable number format
         'verbose': False,    # Verbosity?
         'table':   None,     # Table border style
+        'sort':    None,     # Default sort
+        'order':   None,     # Default sort order
         'cols':    dict()    # What columns in what order to display
     }
 
@@ -1111,7 +1276,7 @@ def main(argv):
     validate_config(config)
 
     # Merge cmd args and config file settings
-    settings = build_settings(settings, config, COL_DEFAULT)
+    settings = build_settings(settings, config, COL_DEFAULT, 'name', 'asc')
 
     # Get remote price info
     url = Fetch(True)
@@ -1128,10 +1293,12 @@ def main(argv):
 
     # Initialize and run Coinwatch
     cowa = Coinwatch({
-        'color': settings['color'],  # Colorize output?
-        'human': settings['human'],  # Humanize number output?
-        'table': settings['table'],  # Table border style
-        'cols': settings['cols']     # Columns to display
+        'color':  settings['color'],  # Colorize output?
+        'human':  settings['human'],  # Humanize number output?
+        'sort':   settings['sort'],   # Column to sort
+        'order':  settings['order'],  # Sort order
+        'table':  settings['table'],  # Table border style
+        'cols':   settings['cols']    # Columns to display
     }, COL_SETTINGS)
     cowa.print_stats(currencies, config['trades'])
 
