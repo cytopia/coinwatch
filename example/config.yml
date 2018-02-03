@@ -33,7 +33,7 @@ config:
   # Specify the column to sort this table
   sort: name
   # Specify the sort order (asc or desc)
-  order: desc
+  order: asc
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
