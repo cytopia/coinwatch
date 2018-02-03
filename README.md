@@ -32,6 +32,9 @@ coinwatch -r "coin date nowprice wealth profit percent"
 # Specify sort and order
 coinwatch -s profit -o desc
 
+# Sort and group by name
+coinwatch -s name -g name
+
 # Disable colorized output
 coinwatch -n
 
@@ -209,6 +212,9 @@ OPTIONS:
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.
+  -g, --group    Group by column name (visually).
+                 Grouping is applied after sorting and only equal vertical rows of
+                 the specified group column are grouped.
   -t, --table    Specify different table border.
                  Available values: 'thin', 'thick' and 'ascii'.
                  The default is 'thin'.

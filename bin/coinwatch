@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.9'
+VERSION = '0.10'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -634,11 +634,23 @@ class Table(object):
         else:
             self.__sort_rows(sort_col, True)
 
-        # TODO: Implement grouping
-
+        # Poor man's grouping or data rows
         rows = []
-        for row in self.__data['rows']:
-            rows.append(self.__get_row(display_columns, row))
+        group = None
+        for idx, row in enumerate(self.__data['rows']):
+            row_format = self.__get_row(display_columns, row)
+            if group_col is None:
+                if idx != 0:
+                    row_format = sep_mid + '\n' + row_format
+            elif group and row[group_col] == group:
+                pass
+            else:
+                if idx == 0:
+                    row_format = row_format
+                else:
+                    row_format = sep_mid + '\n' + row_format
+                group = row[group_col]
+            rows.append(row_format)
 
         heads = []
         for row in self.__data['heads']:
@@ -654,7 +666,7 @@ class Table(object):
         if heads:
             table += ('\n' + sep_mid + '\n').join(heads) + '\n' + sep_mid + '\n'
         if rows:
-            table += ('\n' + sep_mid + '\n').join(rows) + '\n'
+            table += ('\n').join(rows) + '\n'
         if foots:
             table += sep_mid + '\n' + ('\n' + sep_mid + '\n').join(foots) + '\n'
 
@@ -736,6 +748,7 @@ class Coinwatch(object):
         'human': False,    # Humanize number output?
         'sort':  'name',   # Default sort column
         'order': 'asc',    # Default sort order
+        'group': None,     # Default grouping
         'table': 'thick',  # Table border style
         'cols':  dict()    # Columns to display
     }
@@ -938,7 +951,12 @@ class Coinwatch(object):
         tbl.add_footer_row(fvalues)
 
         # Draw table
-        tbl.draw(display_columns, self.__settings['sort'], self.__settings['order'])
+        tbl.draw(
+            display_columns,
+            self.__settings['sort'],
+            self.__settings['order'],
+            self.__settings['group']
+        )
 
 
 ############################################################
@@ -992,7 +1010,7 @@ def print_version():
 
 def print_help():
     '''Show program help'''
-    print('''Usage: %s [-crsotnhv]
+    print('''Usage: %s [-crsogtnhv]
        %s [--help]
        %s [--version]
 
@@ -1022,6 +1040,9 @@ OPTIONS:
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.
+  -g, --group    Group by column name (visually).
+                 Grouping is applied after sorting and only equal vertical rows of
+                 the specified group column are grouped.
   -t, --table    Specify different table border. In case you need to process
                  the output of this tool use 'ascii'.
                  Available values: 'thin', 'thick' and 'ascii'.
@@ -1179,13 +1200,14 @@ def parse_args(argv, settings):
 
     # Define command line options
     try:
-        opts, argv = getopt.getopt(argv, 'c:r:s:o:t:nhv', [
+        opts, argv = getopt.getopt(argv, 'c:r:s:o:g:t:nhv', [
             'version',
             'help',
             'config=',
             'row=',
             'sort=',
             'order=',
+            'group=',
             'table=',
             'nocolor',
             'human',
@@ -1228,6 +1250,13 @@ def parse_args(argv, settings):
                 logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
                 sys.exit(2)
             settings['order'] = arg
+        # Get column to group
+        elif opt in ('-g', '--group'):
+            if arg not in COL_AVAILABLE:
+                logerr('[ERR] Invalid group column name: \'' + arg + '\'')
+                logerr('[ERR] Valid group column names: ' + ', '.join(COL_AVAILABLE))
+                sys.exit(2)
+            settings['group'] = arg
         # Choose table border
         elif opt in ('-t', '--table'):
             if arg not in('thin', 'thick', 'ascii'):
@@ -1269,6 +1298,7 @@ def main(argv):
         'verbose': False,    # Verbosity?
         'table':   None,     # Table border style
         'sort':    None,     # Default sort
+        'group':   None,     # Group column
         'order':   None,     # Default sort order
         'cols':    dict()    # What columns in what order to display
     }
@@ -1305,6 +1335,7 @@ def main(argv):
         'human':  settings['human'],  # Humanize number output?
         'sort':   settings['sort'],   # Column to sort
         'order':  settings['order'],  # Sort order
+        'group':  settings['group'],  # Group column
         'table':  settings['table'],  # Table border style
         'cols':   settings['cols']    # Columns to display
     }, COL_SETTINGS)
