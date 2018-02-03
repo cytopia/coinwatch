@@ -420,29 +420,35 @@ class Table(object):
         self.set_col_widths()
 
     @staticmethod
+    def __remove_ansi(string):
+        '''Remove ANSI escape sequences and spaces'''
+        regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
+        return regex.sub('', str(string)).strip()
+
+    @staticmethod
     def __ansilen(string):
         '''Get string length without ansi escape codes'''
-        regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
-        return len(regex.sub('', str(string)))
+        return len(Table.__remove_ansi(string))
 
     def __sort_rows(self, column=None, reverse=False):
         '''Sort all data rows (excluding headers and footers by given column)'''
+
         # Only sort if the sort key actually exists
-
-        def csort(x, y):
-            '''Custom sort function'''
-            # Remove ANSI escape sequences and spaces
-            regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
-            x = regex.sub('', str(x[column])).strip()
-            y = regex.sub('', str(y[column])).strip()
-            try:
-                return cmp(float(x), float(y))
-            except ValueError:
-                pass
-            return cmp(x, y)
-
         if column in self.__columns:
-            self.__data['rows'] = sorted(self.__data['rows'], cmp=csort, reverse=reverse)
+            # Try to sort float numbers
+            try:
+                self.__data['rows'] = sorted(
+                    self.__data['rows'],
+                    key=lambda x: float(Table.__remove_ansi(x[column]).replace(',', '')),
+                    reverse=reverse
+                )
+            # Fall-back on string sort
+            except ValueError:
+                self.__data['rows'] = sorted(
+                    self.__data['rows'],
+                    key=lambda x: Table.__remove_ansi(x[column]),
+                    reverse=reverse
+                )
 
     def __get_row(self, display_columns, data):
         '''
