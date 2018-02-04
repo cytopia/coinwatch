@@ -26,8 +26,8 @@ coinwatch
 coinwatch -c ~/path/to/conf.yml
 
 # Different columns and order
-coinwatch -r "coin buyprice nowprice wealth invest profit"
-coinwatch -r "coin date nowprice wealth profit percent"
+coinwatch -r "name buyprice nowprice wealth invest profit"
+coinwatch -r "name date nowprice wealth profit percent"
 
 # Specify sort and order
 coinwatch -s profit -o desc
@@ -93,7 +93,7 @@ config:
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
-  columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  columns: name symbol date buyprice diffprice nowprice amount invest wealth profit percent
   # Specify your table border style
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
@@ -210,10 +210,10 @@ OPTIONS:
                  In case you dont need all columns to be shown or want
                  a different order of columns, use this argument to specify it.
                  Examples:
-                   -r "coin date profit percent"
-                   -r "coin buyprice nowprice amount wealth"
+                   -r "name date profit percent"
+                   -r "name buyprice nowprice amount wealth"
                  Default:
-                   -r "coin date buyprice nowprice amount invest wealth profit percent"
+                   -r "name symbol date buyprice nowprice amount invest wealth profit percent"
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.

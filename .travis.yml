@@ -59,9 +59,9 @@ before_script:
 ###
 script:
   # Coding conventions
-  - pep8 --max-line-length=100 bin/coinwatch
+  - pep8 bin/coinwatch
   #- if pylint --version >/dev/null 2>&1; then pylint bin/coinwatch; fi
-  - if flake8 --version >/dev/null 2>&1; then flake8 --max-line-len=100 bin/coinwatch; fi
+  - if flake8 --version >/dev/null 2>&1; then flake8 bin/coinwatch; fi
   # Run
   - ./bin/coinwatch -c example/config.yml
   - ./bin/coinwatch -c example/config.yml -r "name diffprice amount invest wealth profit"
