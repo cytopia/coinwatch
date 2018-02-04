@@ -481,7 +481,7 @@ class Table(object):
         for column in display_columns:
             # 1. Get alignment
             if align_type == 'head':
-                align = '<' #self.__col_settings[column]['align']
+                align = '<'  # self.__col_settings[column]['align']
             else:
                 align = self.__col_settings[column]['align']
             # 2. Get width
