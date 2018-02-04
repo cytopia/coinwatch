@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.11'
+VERSION = '0.12'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -70,6 +70,7 @@ API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 COL_SETTINGS = {
     # colname    #col width    #col align     #precision   #color          #headline
     'name':      {'width': 13, 'align': '<', 'prec': None, 'color': False, 'head': 'CURRENCY'},
+    'symbol':    {'width':  7, 'align': '<', 'prec': None, 'color': False, 'head': 'SYMBOL'},
     'date':      {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'BUY DATE'},
     'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ BUY PRICE/c'},
     'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True, 'head': '$ DIFF PRICE/c'},
@@ -83,6 +84,7 @@ COL_SETTINGS = {
 # All available columns
 COL_AVAILABLE = [
     'name',
+    'symbol',
     'date',
     'buyprice',
     'diffprice',
@@ -97,6 +99,7 @@ COL_AVAILABLE = [
 # configuration file or command line arguments
 COL_DEFAULT = [
     'name',
+    'symbol',
     'date',
     'buyprice',
     'diffprice',
@@ -155,7 +158,7 @@ config:
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
-  columns: name date buyprice diffprice nowprice amount invest wealth profit percent
+  columns: name symbol date buyprice diffprice nowprice amount invest wealth profit percent
   # Specify your table border style
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
@@ -817,7 +820,7 @@ class Coinwatch(object):
         return Num.div(invest, amount)
 
     @staticmethod
-    def __extract_trade_row_values(currency, price, trade):
+    def __extract_trade_row_values(currency, symbol, price, trade):
         '''
         Extract values of one trade list item, calculate all other necessary
         values and combine with current price and crypto name.
@@ -836,6 +839,7 @@ class Coinwatch(object):
 
         return {
             'name':      currency,
+            'symbol':    symbol,
             'date':      str(trade.get('date', '-')),
             'buyprice':  buyprice,
             'diffprice': diffprice,
@@ -907,6 +911,7 @@ class Coinwatch(object):
         '''Format and return the summary row'''
         values = dict()
         values['name'] = 'TOTAL'
+        values['symbol'] = ''
         values['date'] = ''
         values['buyprice'] = ''
         values['diffprice'] = ''
@@ -947,6 +952,7 @@ class Coinwatch(object):
             if currency['id'] in trades:
 
                 name = currency['id']
+                symbol = currency['symbol']
 
                 # Only proceed if trade happened (defined in config)
                 if trades[name]:
@@ -955,7 +961,7 @@ class Coinwatch(object):
                     for trade in trades[name]:
 
                         # Extract and format row values
-                        values = self.__extract_trade_row_values(name, currency['price_usd'], trade)
+                        values = self.__extract_trade_row_values(name, symbol, currency['price_usd'], trade)
                         fvalues = self.__format_trade_row_values(values)
 
                         # Add row
@@ -1053,8 +1059,8 @@ OPTIONS:
                  Available columns:
                    %s
                  Examples:
-                   -r "coin date profit percent"
-                   -r "coin buyprice nowprice amount wealth"
+                   -r "name date profit percent"
+                   -r "name buyprice nowprice amount wealth"
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.
