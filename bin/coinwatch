@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.10'
+VERSION = '0.11'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -365,7 +365,9 @@ class Table(object):
             'bot-rgt': '|',
             'bot-cen': '-',
             'hor-sep': '-',
-            'ver-sep': '|'
+            'ver-sep': '|',
+            'asc':     '>',
+            'desc':    '<'
         },
         'thin': {
             'top-lft': '┌',
@@ -378,7 +380,9 @@ class Table(object):
             'bot-rgt': '┘',
             'bot-cen': '┴',
             'hor-sep': '─',
-            'ver-sep': '│'
+            'ver-sep': '│',
+            'asc':     '»',
+            'desc':    '«'
         },
         'thick': {
             'top-lft': '╔',
@@ -391,7 +395,9 @@ class Table(object):
             'bot-rgt': '╝',
             'bot-cen': '╩',
             'hor-sep': '═',
-            'ver-sep': '║'
+            'ver-sep': '║',
+            'asc':     '»',
+            'desc':    '«'
         }
     }
 
@@ -452,7 +458,7 @@ class Table(object):
                     reverse=reverse
                 )
 
-    def __get_row(self, display_columns, data):
+    def __get_row(self, display_columns, data, align_type='row', sort_col=None, sort_order=None):
         '''
         Returns the formatted row string by applying format()
 
@@ -461,6 +467,9 @@ class Table(object):
         data             List of columns. This is required to calculate
                          their width without ANSI escape sequences in order to properly
                          re-calculate the width of a column.
+        The following two arguments are only relevant to the first header row.
+        sort_col         When specified, add a sort indicator to this column
+        sort_order       When specified, set the direction of the sort indicator
         '''
         # Get symbols in local var for better readability
         sym = self.__sym
@@ -471,7 +480,10 @@ class Table(object):
         # Create row format with correct alignment and width
         for column in display_columns:
             # 1. Get alignment
-            align = self.__col_settings[column]['align']
+            if align_type == 'head':
+                align = '<' #self.__col_settings[column]['align']
+            else:
+                align = self.__col_settings[column]['align']
             # 2. Get width
             width = self.__col_settings[column]['width']
             # 3. Adjust width in case our string contains ANSI escape sequences
@@ -479,7 +491,11 @@ class Table(object):
                 diff = len(str(data[column])) - Table.__ansilen(data[column])
                 width += diff
 
-            row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
+            if column == sort_col:
+                # The first header row adds a sort-order indicator to the column sorted by.
+                row += ' {:' + align + str(width) + '}' + sym[sort_order] + sym['ver-sep']
+            else:
+                row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
 
         return row.format(*[data[col] for col in display_columns])
 
@@ -634,7 +650,7 @@ class Table(object):
         else:
             self.__sort_rows(sort_col, True)
 
-        # Poor man's grouping or data rows
+        # Retrieve all data rows and also apply ppor man' grouping.
         rows = []
         group = None
         for idx, row in enumerate(self.__data['rows']):
@@ -652,9 +668,15 @@ class Table(object):
                 group = row[group_col]
             rows.append(row_format)
 
+        # Retrieve all header rows. This will also add a sort-order indicator
+        # to the first header row at the corresponding column.
         heads = []
-        for row in self.__data['heads']:
-            heads.append(self.__get_row(display_columns, row))
+        for idx, row in enumerate(self.__data['heads']):
+            # First head row should have a sort-order indicator
+            if idx == 0:
+                heads.append(self.__get_row(display_columns, row, 'head', sort_col, sort_order))
+            else:
+                heads.append(self.__get_row(display_columns, row, 'head'))
 
         foots = []
         for row in self.__data['foots']:
