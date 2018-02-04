@@ -952,7 +952,6 @@ class Coinwatch(object):
             if currency['id'] in trades:
 
                 name = currency['id']
-                symbol = currency['symbol']
 
                 # Only proceed if trade happened (defined in config)
                 if trades[name]:
@@ -961,7 +960,12 @@ class Coinwatch(object):
                     for trade in trades[name]:
 
                         # Extract and format row values
-                        values = self.__extract_trade_row_values(name, symbol, currency['price_usd'], trade)
+                        values = self.__extract_trade_row_values(
+                            name,
+                            currency['symbol'],
+                            currency['price_usd'],
+                            trade
+                        )
                         fvalues = self.__format_trade_row_values(values)
 
                         # Add row
