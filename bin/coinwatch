@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.12'
+VERSION = '0.13'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -71,7 +71,9 @@ COL_SETTINGS = {
     # colname    #col width    #col align     #precision   #color          #headline
     'name':      {'width': 13, 'align': '<', 'prec': None, 'color': False, 'head': 'CURRENCY'},
     'symbol':    {'width':  7, 'align': '<', 'prec': None, 'color': False, 'head': 'SYMBOL'},
-    'date':      {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'BUY DATE'},
+    'cust1':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 1'},
+    'cust2':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 2'},
+    'cust3':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 3'},
     'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ BUY PRICE/c'},
     'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True, 'head': '$ DIFF PRICE/c'},
     'nowprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ NOW PRICE/c'},
@@ -85,7 +87,9 @@ COL_SETTINGS = {
 COL_AVAILABLE = [
     'name',
     'symbol',
-    'date',
+    'cust1',
+    'cust2',
+    'cust3',
     'buyprice',
     'diffprice',
     'nowprice',
@@ -100,7 +104,6 @@ COL_AVAILABLE = [
 COL_DEFAULT = [
     'name',
     'symbol',
-    'date',
     'buyprice',
     'diffprice',
     'nowprice',
@@ -127,8 +130,10 @@ EXAMPLE_CONFIG = '''---
 #   CURRENCY_ID:  # <-- [array]       Each currency will hold a list of trades
 #     - amount:   # <-- [decimal]     [1] How many coins for that currency were bought
 #       invest:   # <-- [decimal]     [1] How much money was spent on all coins
-#       price:    # <-- [decimal]     [1] Price for 1 coin on that date
-#       date:     # <-- [yyyy-mm-dd]  When was that bought
+#       price:    # <-- [decimal]     [1] Price for 1 coin when it was bought
+#       cust1:    # <-- [string]      Custom column
+#       cust2:    # <-- [string]      Custom column
+#       cust3:    # <-- [string]      Custom column
 #
 # [1] IMPORTANT: Only always specify two of 'amount', 'invest' and 'price'.
 #                The third value will always be calculated from the other two.
@@ -158,7 +163,24 @@ config:
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
-  columns: name symbol date buyprice diffprice nowprice amount invest wealth profit percent
+  #
+  # There are also three other columns which are off by default: 'cust1', 'cust2' and 'cust3'.
+  # Enable them here or via (-r).
+  # Those three columns can be added to your trades in order to display custom information,
+  # such as which market they were bought from or on what date they were bought.
+  columns: name symbol buyprice diffprice nowprice amount invest wealth profit percent
+  # Define your custom columns here.
+  # Set column headline and width.
+  cust:
+    cust1:
+      headline: BUY DATE
+      width: 10
+    cust2:
+      headline: MARKET
+      width: 10
+    cust3:
+      headline: EXAMPLE
+      width: 10
   # Specify your table border style
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
@@ -167,22 +189,26 @@ config:
 # Configure your purchases
 trades:
   bitcoin:
-    # Options-1
-    - amount:  5.323
-      invest:  35432.23
-      date:    2017-12-05
-    # Options-2
-    - amount:  0.001
-      price:   110323.54
-      date:    2018-01-27
-    # Options-3
-    - invest:  100
-      price:   110323.54
-      date:    2018-01-27
+    # Option-1: Invested 500.00$ and got 0.0425 coins
+    - invest: 500.00
+      amount: 0.0425
+      cust1: 2016-04-30
+      cust2: cryptopia
+    # Option-2: bought at 10,010.50 and bought 0.5 coins
+    - amount: 0.5
+      price: 10010.50
+      cust1: 2017-08-31
+      cust2: cryptopia
+    # Option-3: invested 500.00$ at 11,043.12 price/coin
+    - invest: 500.00
+      price: 11043.12
+      cust1: 2017-12-05
+      cust2: binance
   ethereum:
     - amount:  20
       price:   1070
-      date:    2017-12-05
+      cust1:   2017-12-05
+      cust2:   cryptopia
   iota: []
 '''
 
@@ -292,6 +318,11 @@ class Num(object):
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return bool(Num.__num(number) == Num.__zero())
+
+    @staticmethod
+    def isint(number):
+        '''Check if number is a valid integer'''
+        return str(number).isdigit()
 
     @staticmethod
     def percent(whole, part):
@@ -661,7 +692,7 @@ class Table(object):
             if group_col is None:
                 if idx != 0:
                     row_format = sep_mid + '\n' + row_format
-            elif group and row[group_col] == group:
+            elif group is not None and row[group_col] == group:
                 pass
             else:
                 if idx == 0:
@@ -824,7 +855,7 @@ class Coinwatch(object):
         '''
         Extract values of one trade list item, calculate all other necessary
         values and combine with current price and crypto name.
-        trade: {date, price, invest, amount}
+        trade: {cust1, cust2, cust3, price, invest, amount}
         '''
         amount = Coinwatch.__get_amount(trade)
         invest = Coinwatch.__get_invest(trade)
@@ -840,7 +871,9 @@ class Coinwatch(object):
         return {
             'name':      currency,
             'symbol':    symbol,
-            'date':      str(trade.get('date', '-')),
+            'cust1':     str(trade.get('cust1', '')),
+            'cust2':     str(trade.get('cust2', '')),
+            'cust3':     str(trade.get('cust3', '')),
             'buyprice':  buyprice,
             'diffprice': diffprice,
             'nowprice':  nowprice,
@@ -912,7 +945,9 @@ class Coinwatch(object):
         values = dict()
         values['name'] = 'TOTAL'
         values['symbol'] = ''
-        values['date'] = ''
+        values['cust1'] = ''
+        values['cust2'] = ''
+        values['cust3'] = ''
         values['buyprice'] = ''
         values['diffprice'] = ''
         values['nowprice'] = ''
@@ -1063,7 +1098,7 @@ OPTIONS:
                  Available columns:
                    %s
                  Examples:
-                   -r "name date profit percent"
+                   -r "name cust1 profit percent"
                    -r "name buyprice nowprice amount wealth"
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
@@ -1150,6 +1185,41 @@ def validate_config(config):
                 logerr('[ERR] Invalid sort order in config: \'' + order + '\'')
                 logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
                 sys.exit(2)
+        # Custom fields
+        if 'cust' in config['config']:
+            if 'cust1' in config['config']['cust']:
+                if 'width' in config['config']['cust']['cust1']:
+                    if config['config']['cust']['cust1']['width'] is None:
+                        logerr('[ERR] cust1 width is empty in config')
+                        sys.exit(2)
+                    elif not Num.isint(config['config']['cust']['cust1']['width']):
+                        logerr('[ERR] cust1 width is not a valid integer in config')
+                        sys.exit(2)
+                    elif config['config']['cust']['cust1']['width'] < 1:
+                        logerr('[ERR] cust1 width is less than 1 in config')
+                        sys.exit(2)
+            if 'cust2' in config['config']['cust']:
+                if 'width' in config['config']['cust']['cust2']:
+                    if config['config']['cust']['cust2']['width'] is None:
+                        logerr('[ERR] cust2 width is empty in config')
+                        sys.exit(2)
+                    elif not Num.isint(config['config']['cust']['cust2']['width']):
+                        logerr('[ERR] cust2 width is not a valid integer in config')
+                        sys.exit(2)
+                    elif config['config']['cust']['cust2']['width'] < 1:
+                        logerr('[ERR] cust2 width is less than 1 in config')
+                        sys.exit(2)
+            if 'cust3' in config['config']['cust']:
+                if 'width' in config['config']['cust']['cust3']:
+                    if config['config']['cust']['cust3']['width'] is None:
+                        logerr('[ERR] cust3 width is empty in config')
+                        sys.exit(2)
+                    elif not Num.isint(config['config']['cust']['cust3']['width']):
+                        logerr('[ERR] cust3 width is not a valid integer in config')
+                        sys.exit(2)
+                    elif config['config']['cust']['cust3']['width'] < 1:
+                        logerr('[ERR] cust3 width is less than 1 in config')
+                        sys.exit(2)
         # Table border
         if 'table' in config['config'] and config['config']['table']:
             if config['config']['table'] not in ('thin', 'thick', 'ascii'):
@@ -1165,17 +1235,6 @@ def validate_config(config):
 
 def build_settings(settings, config, default_columns, default_sort, default_order):
     '''Merge settings from command line and config file'''
-
-    # Apply columns to display
-    if settings['cols']:
-        # Set via cmd args, all good
-        pass
-    elif 'columns' in config['config'] and config['config']['columns']:
-        # Available in configuration file
-        settings['cols'] = config['config']['columns'].split()
-    else:
-        # Nowhere set, use defaults
-        settings['cols'] = default_columns
 
     # Apply column sort
     if settings['sort']:
@@ -1198,6 +1257,27 @@ def build_settings(settings, config, default_columns, default_sort, default_orde
     else:
         # Nowhere set, use defaults
         settings['order'] = default_order
+
+    # Apply columns to display
+    if settings['cols']:
+        # Set via cmd args, all good
+        pass
+    elif 'columns' in config['config'] and config['config']['columns']:
+        # Available in configuration file
+        settings['cols'] = config['config']['columns'].split()
+    else:
+        # Nowhere set, use defaults
+        settings['cols'] = default_columns
+
+    # Apply custom columns
+    custom = dict()
+    if 'cust' in config['config'] and 'cust1' in config['config']['cust']:
+        custom.update({'cust1': config['config']['cust']['cust1']})
+    if 'cust' in config['config'] and 'cust2' in config['config']['cust']:
+        custom.update({'cust2': config['config']['cust']['cust2']})
+    if 'cust' in config['config'] and 'cust3' in config['config']['cust']:
+        custom.update({'cust3': config['config']['cust']['cust3']})
+    settings['cust'] = custom
 
     # Apply table border settings
     if settings['table']:
@@ -1360,6 +1440,26 @@ def main(argv):
         logerr('[ERR] Cannot connect to %s' % (API_URL))
         logerr('[ERR] Reason:', err.reason)
         sys.exit(2)
+
+    # Overwrite global Column settings
+    if 'cust1' in settings['cust']:
+        COL_SETTINGS['cust1']['width'] = settings['cust']['cust1']['width']
+        COL_SETTINGS['cust1']['head'] = settings['cust']['cust1'].get(
+            'headline',
+            COL_SETTINGS['cust1']['head']
+        )
+    if 'cust2' in settings['cust']:
+        COL_SETTINGS['cust2']['width'] = settings['cust']['cust2']['width']
+        COL_SETTINGS['cust2']['head'] = settings['cust']['cust2'].get(
+            'headline',
+            COL_SETTINGS['cust2']['head']
+        )
+    if 'cust3' in settings['cust']:
+        COL_SETTINGS['cust3']['width'] = settings['cust']['cust3']['width']
+        COL_SETTINGS['cust3']['head'] = settings['cust']['cust3'].get(
+            'headline',
+            COL_SETTINGS['cust3']['head']
+        )
 
     # Initialize and run Coinwatch
     cowa = Coinwatch({
