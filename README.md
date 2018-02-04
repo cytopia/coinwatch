@@ -93,7 +93,24 @@ config:
   # Configure what columns to display and in what order.
   # To see all available columns view help: $ coinwatch --help
   # Columns specified via command line (-r) take precedence
+  #
+  # There are also three other columns which are off by default: 'cust1', 'cust2' and 'cust3'.
+  # Enable them here or via (-r).
+  # Those three columns can be added to your trades in order to display custom information,
+  # such as which market they were bought from or on what date they were bought.
   columns: name symbol date buyprice diffprice nowprice amount invest wealth profit percent
+  # Define your custom columns here.
+  # Set column headline and width.
+  cust:
+    cust1:
+      headline: BUY DATE
+      width: 10
+    cust2:
+      headline: MARKET
+      width: 10
+    cust3:
+      headline: EXAMPLE
+      width: 10
   # Specify your table border style
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
@@ -107,7 +124,9 @@ trades:
     - amount:   # <-- [decimal]     [1] How many coins for that currency were bought
       invest:   # <-- [decimal]     [1] How much money in total was invested
       price:    # <-- [decimal]     [1] Price for 1 coin of that currency
-      date:     # <-- [yyyy-mm-dd]  When was that bought
+      cust1:    # <-- [string]      Custom column
+      cust2:    # <-- [string]      Custom column
+      cust3:    # <-- [string]      Custom column
 ```
 
 **`[1]`** `amount`, `invest` and `price` at the same time? Yes that's right there is duplication, however only always two of those three can be specified at the same time. This gives the possibility to record you trades in three different ways:
@@ -160,18 +179,36 @@ When adding new cryptocurrencies, you need to make sure that you use the correct
 
 ### Example
 An example file could look like this. It shows three bitcoin trades (with each different option to specify your purchases), one ethereum trade and an empty place holder for iota. When specifying an empty array, it serves only as a reminder for you to fill that out later and will not be shown in the stats.
+
+Additionally two custom fields have been configured to add more information to each trade. It is used to display the buy date as well as the market where it was bought from. Then in order to actually show those columns, the `columns` configuration has been changed to also add these two fields.
 ```yml
+config:
+  columns: name symbol cust1 cust2 buyprice diffprice nowprice amount invest wealth profit percent
+  cust:
+    cust1:
+      headline: BUY DATE
+      width: 01
+    cust2:
+      headline: MARKET
+      width: 10
+
 trades:
   bitcoin:
+    # Option-1: Invested 500.00$ and got 0.0425 coins
     - amount: 0.4
       invest: 3742.35
-      date:   2017-12-03
+      cust1:  2017-12-03
+      cust2:  binance
+    # Option-2: bought at 10,010.50 and bought 0.5 coins
     - amount: 0.4
       price:  9355.875
-      date:   2017-12-04
+      cust1:  2017-12-04
+      cust2:  binance
+    # Option-3: invested 500.00$ at 11,043.12 price/coin
     - invest: 3742.35
       price:  9355.875
-      date:   2017-12-05
+      cust1:  2017-12-05
+      cust2:  binance
   ethereum:
     - amount: 20
       price:  1070
