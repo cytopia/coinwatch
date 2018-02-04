@@ -149,6 +149,15 @@ trades:
       price:  9355.875
 ```
 
+### Get currency names
+
+When adding new cryptocurrencies, you need to make sure that you use the correct name to add to the configuration file. Names can be retrieved from https://api.coinmarketcap.com/v1/ticker/?limit=0.
+
+| Screenshot | Explanation |
+|------------|-------------|
+| ![api](screenshot/api.png) | When visiting the coinmarketcap API page, look for the `id` field of a currency and use its value to add to the configuration file. |
+
+
 ### Example
 An example file could look like this. It shows three bitcoin trades (with each different option to specify your purchases), one ethereum trade and an empty place holder for iota. When specifying an empty array, it serves only as a reminder for you to fill that out later and will not be shown in the stats.
 ```yml
