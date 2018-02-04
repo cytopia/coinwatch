@@ -198,17 +198,17 @@ trades:
     - amount: 0.4
       invest: 3742.35
       cust1:  2017-12-03
-	  cust2:  binance
+      cust2:  binance
     # Option-2: bought at 10,010.50 and bought 0.5 coins
     - amount: 0.4
       price:  9355.875
       cust1:  2017-12-04
-	  cust2:  binance
+      cust2:  binance
     # Option-3: invested 500.00$ at 11,043.12 price/coin
     - invest: 3742.35
       price:  9355.875
       cust1:  2017-12-05
-	  cust2:  binance
+      cust2:  binance
   ethereum:
     - amount: 20
       price:  1070
