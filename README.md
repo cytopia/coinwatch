@@ -3,6 +3,7 @@
 **[Usage](#usage)** |
 **[Screenshots](#screenshots)** |
 **[Features](#features)** |
+**[Columns](#columns)** |
 **[Configuration](#configuration)** |
 **[Options](#options)** |
 **[API](#api)** |
@@ -74,6 +75,38 @@ The example shows coinwatch wrapped into `watch` and refresh every 10 seconds.
 * Pure text-based output is available for further processing in other tools
 
 
+## Columns
+
+`coinwatch` offers many columns that can be displayed in any order. A sane limited default is set in the configuration file which does not display all columns. You are free to alter that and adjust `coinwatch` to your needs directly in the configuration file (see **[Configuration](#configuration)**) or quickly enabled/disable columns via command arguments (`-r`). Sorting, ordering and grouping will also work on columns that are not being displayed. Have a look at the following table which shows you all available columns:
+
+| Column name | Default display | Description |
+|-------------|-----------------|-------------|
+| `name`      | no              | Name of the cryptocurrency. |
+| `symbol`    | yes             | Abbreviation name of the cryptocurrency. |
+| `buyprice`  | yes             | Price in USD at which the currency was bought. |
+| `diffprice` | yes             | Price difference in USD between buy time and now. |
+| `nowprice`  | yes             | Current price in USD of the currency. |
+| `amount`    | yes             | Total number of coins you have bought. |
+| `invest`    | yes             | Total amount in USD you have invested for all coins bought. |
+| `wealth`    | yes             | Current amount in USD your coins are worth now. |
+| `profit`    | yes             | How much profit in USD did you make on that currency. |
+| `percent`   | yes             | Percent of profit between buy time and now. |
+| `percent1h` | no              | Percent of price change in the last hour of that currency. |
+| `percent24h`| no              | Percent of price change in the last 24 hours of that currency. |
+| `percent7d` | no              | Percent of price change in the last 7 days of that currency. |
+| `cust1`     | no              | Custom field (see **[Configuration](#configuration)**)|
+| `cust2`     | no              | Custom field (see **[Configuration](#configuration)**)|
+| `cust3`     | no              | Custom field (see **[Configuration](#configuration)**)|
+
+**Note about custom fields:**
+
+Headline and column width of custom fields can be set in the configuration file. The values itself can be added to your trade array and can contain any information you wish to display for a given trade. As an example they could contain information such as:
+* At what date did you buy that currency
+* At what market did you buy that currency
+* The wallet address where the coins are
+* Are the coins still online or already downloaded to a cold wallet
+
+
 ## Configuration
 When starting `coinwatch` for the first time, it will create a default configuration file in `~/.config/coinwatch/config.yml` with no trades to watch. To get a quick overview, have a look at the [example config](example/config.yml).
 
@@ -84,9 +117,9 @@ The configuration file is build up like this:
 ```yml
 # Configure coinwatch
 config:
-  # Specify the column to sort this table
+  # Specify the default column to sort this table by or leave empty for unsorted.
   # Overwrite via -s <column>
-  sort: name
+  sort:
   # Specify the sort order (asc or desc)
   # Overwrite via -o desc
   order: asc
@@ -174,7 +207,7 @@ When adding new cryptocurrencies, you need to make sure that you use the correct
 
 | Screenshot | Explanation |
 |------------|-------------|
-| ![api](screenshot/api.png) | When visiting the coinmarketcap API page, look for the `id` field of a currency and use its value to add to the configuration file. |
+| ![api](screenshot/api.png) | When visiting the coinmarketcap API page, look for the `id` field of a currency and use its value to add to the configuration file.<br/><br/>In case you wanted to add Ethereum and Bitcoin as seen in the example screenshot, you would use `ethereum` and `bitcoin` as names to put into your configuration file. |
 
 
 ### Example
@@ -254,7 +287,7 @@ OPTIONS:
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.
-                 The default is: 'name'
+                 The default is unsorted.
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.

@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.13'
+VERSION = '0.14'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -81,7 +81,10 @@ COL_SETTINGS = {
     'invest':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ INVEST'},
     'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ WEALTH'},
     'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True, 'head': '$ PROFIT'},
-    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': False, 'head': 'PERCENT'}
+    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': 'PERCENT'},
+    'percent1h':  {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 1h'},
+    'percent24h': {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 24h'},
+    'percent7d':  {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 7d'}
 }
 # All available columns
 COL_AVAILABLE = [
@@ -97,12 +100,14 @@ COL_AVAILABLE = [
     'invest',
     'wealth',
     'profit',
-    'percent'
+    'percent',
+    'percent1h',
+    'percent24h',
+    'percent7d'
 ]
 # Default columns to display if not otherwise overwritten via
 # configuration file or command line arguments
 COL_DEFAULT = [
-    'name',
     'symbol',
     'buyprice',
     'diffprice',
@@ -802,7 +807,7 @@ class Coinwatch(object):
     __settings = {
         'color': False,    # Colorize output?
         'human': False,    # Humanize number output?
-        'sort':  'name',   # Default sort column
+        'sort':  None,     # Default sort column
         'order': 'asc',    # Default sort order
         'group': None,     # Default grouping
         'table': 'thick',  # Table border style
@@ -851,7 +856,7 @@ class Coinwatch(object):
         return Num.div(invest, amount)
 
     @staticmethod
-    def __extract_trade_row_values(currency, symbol, price, trade):
+    def __extract_trade_row_values(currency, trade):
         '''
         Extract values of one trade list item, calculate all other necessary
         values and combine with current price and crypto name.
@@ -860,28 +865,31 @@ class Coinwatch(object):
         amount = Coinwatch.__get_amount(trade)
         invest = Coinwatch.__get_invest(trade)
         buyprice = Coinwatch.__get_price(trade)
-        nowprice = Num.get(price)
+        nowprice = Num.get(currency['price_usd'])
 
         # Calculate diffprice, wealth, profit and percent
         diffprice = Num.sub(nowprice, buyprice)
         wealth = Num.mul(nowprice, amount)
         profit = Num.sub(wealth, invest)
-        percent = Num.percent(wealth, invest)
+        percent = Num.sub(Num.percent(wealth, invest), 100)
 
         return {
-            'name':      currency,
-            'symbol':    symbol,
-            'cust1':     str(trade.get('cust1', '')),
-            'cust2':     str(trade.get('cust2', '')),
-            'cust3':     str(trade.get('cust3', '')),
-            'buyprice':  buyprice,
-            'diffprice': diffprice,
-            'nowprice':  nowprice,
-            'amount':    amount,
-            'invest':    invest,
-            'wealth':    wealth,
-            'profit':    profit,
-            'percent':   percent
+            'name':       currency['id'],
+            'symbol':     currency['symbol'],
+            'cust1':      str(trade.get('cust1', '')),
+            'cust2':      str(trade.get('cust2', '')),
+            'cust3':      str(trade.get('cust3', '')),
+            'buyprice':   buyprice,
+            'diffprice':  diffprice,
+            'nowprice':   nowprice,
+            'amount':     amount,
+            'invest':     invest,
+            'wealth':     wealth,
+            'profit':     profit,
+            'percent':    percent,
+            'percent1h':  currency['percent_change_1h'],
+            'percent24h': currency['percent_change_24h'],
+            'percent7d':  currency['percent_change_7d']
         }
 
     @staticmethod
@@ -934,7 +942,7 @@ class Coinwatch(object):
                 )
             # 3. Colorize
             if col_settings[val]['color'] and fvalues[val]:
-                if values[val] < 0:
+                if Num.get(values[val]) < 0:
                     fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
                 else:
                     fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
@@ -943,7 +951,7 @@ class Coinwatch(object):
     def __format_summary_row_values(self, totals):
         '''Format and return the summary row'''
         values = dict()
-        values['name'] = 'TOTAL'
+        values['name'] = ''
         values['symbol'] = ''
         values['cust1'] = ''
         values['cust2'] = ''
@@ -955,7 +963,10 @@ class Coinwatch(object):
         values['invest'] = totals['invest']
         values['wealth'] = totals['wealth']
         values['profit'] = totals['profit']
-        values['percent'] = Num.percent(totals['wealth'], totals['invest'])
+        values['percent'] = Num.sub(Num.percent(totals['wealth'], totals['invest']), 100)
+        values['percent1h'] = ''
+        values['percent24h'] = ''
+        values['percent7d'] = ''
         return self.__format_trade_row_values(values)
 
     def print_stats(self, currencies, trades):
@@ -995,12 +1006,7 @@ class Coinwatch(object):
                     for trade in trades[name]:
 
                         # Extract and format row values
-                        values = self.__extract_trade_row_values(
-                            name,
-                            currency['symbol'],
-                            currency['price_usd'],
-                            trade
-                        )
+                        values = self.__extract_trade_row_values(currency, trade)
                         fvalues = self.__format_trade_row_values(values)
 
                         # Add row
@@ -1103,7 +1109,7 @@ OPTIONS:
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.
-                 The default is 'name'.
+                 The default is unsorted.
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.
@@ -1426,8 +1432,7 @@ def main(argv):
     validate_config(config)
 
     # Merge cmd args and config file settings
-    settings = build_settings(settings, config, COL_DEFAULT, 'name', 'asc')
-
+    settings = build_settings(settings, config, COL_DEFAULT, None, 'asc')
     # Get remote price info
     url = Fetch(True)
     try:

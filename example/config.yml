@@ -32,9 +32,9 @@
 
 # Configure coinwatch
 config:
-  # Specify the column to sort this table
+  # Specify the default column to sort this table by or leave empty for unsorted.
   # Overwrite via -s <column>
-  sort: name
+  sort:
   # Specify the sort order (asc or desc)
   # Overwrite via -o desc
   order: asc
@@ -46,7 +46,7 @@ config:
   # Enable them here or via (-r).
   # Those three columns can be added to your trades in order to display custom information,
   # such as which market they were bought from or on what date they were bought.
-  columns: name symbol buyprice diffprice nowprice amount invest wealth profit percent
+  columns: symbol buyprice diffprice nowprice amount invest wealth profit percent
   # Define your custom columns here.
   # Set column headline and width.
   cust:
