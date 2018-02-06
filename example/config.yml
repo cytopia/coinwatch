@@ -32,9 +32,9 @@
 
 # Configure coinwatch
 config:
-  # Specify the column to sort this table
+  # Specify the column to sort this table by default or leave empty.
   # Overwrite via -s <column>
-  sort: name
+  sort:
   # Specify the sort order (asc or desc)
   # Overwrite via -o desc
   order: asc

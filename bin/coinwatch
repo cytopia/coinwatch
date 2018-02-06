@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.13'
+VERSION = '0.14'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -802,7 +802,7 @@ class Coinwatch(object):
     __settings = {
         'color': False,    # Colorize output?
         'human': False,    # Humanize number output?
-        'sort':  'name',   # Default sort column
+        'sort':  None,     # Default sort column
         'order': 'asc',    # Default sort order
         'group': None,     # Default grouping
         'table': 'thick',  # Table border style
@@ -1103,7 +1103,7 @@ OPTIONS:
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.
-                 The default is 'name'.
+                 The default is unsorted.
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.
@@ -1426,8 +1426,7 @@ def main(argv):
     validate_config(config)
 
     # Merge cmd args and config file settings
-    settings = build_settings(settings, config, COL_DEFAULT, 'name', 'asc')
-
+    settings = build_settings(settings, config, COL_DEFAULT, None, 'asc')
     # Get remote price info
     url = Fetch(True)
     try:

@@ -84,9 +84,9 @@ The configuration file is build up like this:
 ```yml
 # Configure coinwatch
 config:
-  # Specify the column to sort this table
+  # Specify the default column to sort this table by or leave empty for unsorted.
   # Overwrite via -s <column>
-  sort: name
+  sort:
   # Specify the sort order (asc or desc)
   # Overwrite via -o desc
   order: asc
@@ -174,7 +174,7 @@ When adding new cryptocurrencies, you need to make sure that you use the correct
 
 | Screenshot | Explanation |
 |------------|-------------|
-| ![api](screenshot/api.png) | When visiting the coinmarketcap API page, look for the `id` field of a currency and use its value to add to the configuration file. |
+| ![api](screenshot/api.png) | When visiting the coinmarketcap API page, look for the `id` field of a currency and use its value to add to the configuration file.<br/><br/>In case you wanted to add Ethereum and Bitcoin as seen in the example screenshot, you would use `ethereum` and `bitcoin` as names to put into your configuration file. |
 
 
 ### Example
@@ -254,7 +254,7 @@ OPTIONS:
   -s, --sort     Specify the column name to sort this table.
                  See above for available columns.
                  The table can also be sorted against columns that are not displayed.
-                 The default is: 'name'
+                 The default is unsorted.
   -o, --order    Specify the sorting order.
                  Valid orders: 'asc' and 'desc'.
                  The default order is 'asc'.
