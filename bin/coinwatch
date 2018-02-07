@@ -873,6 +873,13 @@ class Coinwatch(object):
         profit = Num.sub(wealth, invest)
         percent = Num.sub(Num.percent(wealth, invest), 100)
 
+        if currency['percent_change_1h'] is None:
+            currency['percent_change_1h'] = Num.get('0.0')
+        if currency['percent_change_24h'] is None:
+            currency['percent_change_24h'] = Num.get('0.0')
+        if currency['percent_change_7d'] is None:
+            currency['percent_change_7d'] = Num.get('0.0')
+
         return {
             'name':       currency['id'],
             'symbol':     currency['symbol'],
@@ -942,7 +949,7 @@ class Coinwatch(object):
                 )
             # 3. Colorize
             if col_settings[val]['color'] and fvalues[val]:
-                if Num.get(values[val]) < 0:
+                if Num.get(values[val]) < Num.get('0.0'):
                     fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
                 else:
                     fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
