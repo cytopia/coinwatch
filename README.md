@@ -94,6 +94,11 @@ The example shows coinwatch wrapped into `watch` and refresh every 10 seconds.
 | `percent1h` | no              | Percent of price change in the last hour of that currency. |
 | `percent24h`| no              | Percent of price change in the last 24 hours of that currency. |
 | `percent7d` | no              | Percent of price change in the last 7 days of that currency. |
+| `vol_24h`   | no              | Volume in USD in the last 24 hours. |
+| `marketcap` | no              | Market capacity in USD.
+| `supply_a`  | no              | Currently available supply of coins. |
+| `supply_t`  | no              | Total supply of coins. |
+| `supply_m`  | no              | Maximum supply of coins. |
 | `cust1`     | no              | Custom field (see **[Configuration](#configuration)**)|
 | `cust2`     | no              | Custom field (see **[Configuration](#configuration)**)|
 | `cust3`     | no              | Custom field (see **[Configuration](#configuration)**)|
