@@ -35,7 +35,7 @@ except ImportError:
     from urllib2 import URLError, HTTPError
 
 # Default imports
-from decimal import Decimal, getcontext, localcontext
+from decimal import Decimal, getcontext, localcontext, DecimalException
 from random import randint
 import os
 import getopt
@@ -62,7 +62,7 @@ except Exception:
 
 NAME = 'coinwatch'
 AUTHOR = 'cytopia'
-VERSION = '0.14'
+VERSION = '0.15'
 API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
 
 
@@ -82,9 +82,14 @@ COL_SETTINGS = {
     'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ WEALTH'},
     'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True, 'head': '$ PROFIT'},
     'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': 'PERCENT'},
-    'percent1h':  {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 1h'},
-    'percent24h': {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 24h'},
-    'percent7d':  {'width':  7, 'align': '>', 'prec':   1, 'color': True, 'head': '% 7d'}
+    'percent1h': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 1h'},
+    'percent24h': {'width': 7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 24h'},
+    'percent7d': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 7d'},
+    'vol_24h':   {'width': 14, 'align': '>', 'prec':    0, 'color': False, 'head': '$ VOL 24h'},
+    'marketcap': {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': '$ MARKET CAP'},
+    'supply_a':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'AVAIL SUPPLY'},
+    'supply_t':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'TOTAL SUPPLY'},
+    'supply_m':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'MAX SUPPLY'}
 }
 # All available columns
 COL_AVAILABLE = [
@@ -103,7 +108,12 @@ COL_AVAILABLE = [
     'percent',
     'percent1h',
     'percent24h',
-    'percent7d'
+    'percent7d',
+    'vol_24h',
+    'marketcap',
+    'supply_a',
+    'supply_t',
+    'supply_m'
 ]
 # Default columns to display if not otherwise overwritten via
 # configuration file or command line arguments
@@ -326,8 +336,18 @@ class Num(object):
 
     @staticmethod
     def isint(number):
-        '''Check if number is a valid integer'''
+        '''Check if string is a valid integer'''
         return str(number).isdigit()
+
+    @staticmethod
+    def isnumber(number):
+        '''Check if string is a valid number'''
+        try:
+            Num.__num(number)
+            return True
+        except (TypeError, ValueError, DecimalException):
+            pass
+        return False
 
     @staticmethod
     def percent(whole, part):
@@ -873,6 +893,24 @@ class Coinwatch(object):
         profit = Num.sub(wealth, invest)
         percent = Num.sub(Num.percent(wealth, invest), 100)
 
+        # Normalize values from remote
+        if not Num.isnumber(currency['percent_change_1h']):
+            currency['percent_change_1h'] = Num.get('0.0')
+        if not Num.isnumber(currency['percent_change_24h']):
+            currency['percent_change_24h'] = Num.get('0.0')
+        if not Num.isnumber(currency['percent_change_7d']):
+            currency['percent_change_7d'] = Num.get('0.0')
+        if not Num.isnumber(currency['24h_volume_usd']):
+            currency['24h_volume_usd'] = Num.get('0.0')
+        if not Num.isnumber(currency['market_cap_usd']):
+            currency['market_cap_usd'] = Num.get('0.0')
+        if not Num.isnumber(currency['available_supply']):
+            currency['available_supply'] = Num.get('0.0')
+        if not Num.isnumber(currency['total_supply']):
+            currency['total_supply'] = Num.get('0.0')
+        if not Num.isnumber(currency['max_supply']):
+            currency['max_supply'] = Num.get('0.0')
+
         return {
             'name':       currency['id'],
             'symbol':     currency['symbol'],
@@ -889,7 +927,12 @@ class Coinwatch(object):
             'percent':    percent,
             'percent1h':  currency['percent_change_1h'],
             'percent24h': currency['percent_change_24h'],
-            'percent7d':  currency['percent_change_7d']
+            'percent7d':  currency['percent_change_7d'],
+            'vol_24h':    currency['24h_volume_usd'],
+            'marketcap':  currency['market_cap_usd'],
+            'supply_a':   currency['available_supply'],
+            'supply_t':   currency['total_supply'],
+            'supply_m':   currency['max_supply']
         }
 
     @staticmethod
@@ -942,7 +985,7 @@ class Coinwatch(object):
                 )
             # 3. Colorize
             if col_settings[val]['color'] and fvalues[val]:
-                if Num.get(values[val]) < 0:
+                if Num.get(values[val]) < Num.get('0.0'):
                     fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
                 else:
                     fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
@@ -950,24 +993,29 @@ class Coinwatch(object):
 
     def __format_summary_row_values(self, totals):
         '''Format and return the summary row'''
-        values = dict()
-        values['name'] = ''
-        values['symbol'] = ''
-        values['cust1'] = ''
-        values['cust2'] = ''
-        values['cust3'] = ''
-        values['buyprice'] = ''
-        values['diffprice'] = ''
-        values['nowprice'] = ''
-        values['amount'] = ''
-        values['invest'] = totals['invest']
-        values['wealth'] = totals['wealth']
-        values['profit'] = totals['profit']
-        values['percent'] = Num.sub(Num.percent(totals['wealth'], totals['invest']), 100)
-        values['percent1h'] = ''
-        values['percent24h'] = ''
-        values['percent7d'] = ''
-        return self.__format_trade_row_values(values)
+        return self.__format_trade_row_values({
+            'name':       '',
+            'symbol':     '',
+            'cust1':      '',
+            'cust2':      '',
+            'cust3':      '',
+            'buyprice':   '',
+            'diffprice':  '',
+            'nowprice':   '',
+            'amount':     '',
+            'invest':     totals['invest'],
+            'wealth':     totals['wealth'],
+            'profit':     totals['profit'],
+            'percent':    Num.sub(Num.percent(totals['wealth'], totals['invest']), 100),
+            'percent1h':  '',
+            'percent24h': '',
+            'percent7d':  '',
+            'vol_24h':    '',
+            'marketcap':  '',
+            'supply_a':   '',
+            'supply_t':   '',
+            'supply_m':   ''
+        })
 
     def print_stats(self, currencies, trades):
         '''Print trading stats in a nice table'''
