@@ -153,6 +153,8 @@ config:
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
   table: thin
+  # Convert prices to the desired currency
+  convert: usd
 
 # Configure your purchases
 trades:
@@ -342,11 +344,9 @@ Currently supported remote API's are:
 `coinwatch` itself requires `PyYaml`. Apart fromt that, only one of the following Python versions is required:
 
 * Python 2.7 (requires `future` for Python 3 compat)
-* Python 3.2
-* Python 3.3
-* Python 3.4
 * Python 3.5
 * Python 3.6
+* Python 3.7
 
 
 ## License
