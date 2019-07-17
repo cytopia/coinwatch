@@ -74,19 +74,19 @@ COL_SETTINGS = {
     'cust1':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 1'},
     'cust2':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 2'},
     'cust3':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 3'},
-    'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ BUY PRICE/c'},
-    'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True, 'head': '$ DIFF PRICE/c'},
-    'nowprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ NOW PRICE/c'},
+    'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': 'BUY PRICE/c'},
+    'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True,  'head': 'DIFF PRICE/c'},
+    'nowprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': 'NOW PRICE/c'},
     'amount':    {'width': 16, 'align': '>', 'prec':    6, 'color': False, 'head': 'NUM COINS'},
-    'invest':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ INVEST'},
-    'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ WEALTH'},
-    'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True, 'head': '$ PROFIT'},
-    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': 'PERCENT'},
-    'percent1h': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 1h'},
-    'percent24h': {'width': 7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 24h'},
-    'percent7d': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 7d'},
-    'vol_24h':   {'width': 14, 'align': '>', 'prec':    0, 'color': False, 'head': '$ VOL 24h'},
-    'marketcap': {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': '$ MARKET CAP'},
+    'invest':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': 'INVEST'},
+    'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': 'WEALTH'},
+    'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True,  'head': 'PROFIT'},
+    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': True,  'head': 'PERCENT'},
+    'percent1h': {'width':  7, 'align': '>', 'prec':    1, 'color': True,  'head': '% 1h'},
+    'percent24h': {'width': 7, 'align': '>', 'prec':    1, 'color': True,  'head': '% 24h'},
+    'percent7d': {'width':  7, 'align': '>', 'prec':    1, 'color': True,  'head': '% 7d'},
+    'vol_24h':   {'width': 14, 'align': '>', 'prec':    0, 'color': False, 'head': 'VOL 24h'},
+    'marketcap': {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'MARKET CAP'},
     'supply_a':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'AVAIL SUPPLY'},
     'supply_t':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'TOTAL SUPPLY'},
     'supply_m':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'MAX SUPPLY'}
@@ -200,6 +200,8 @@ config:
   # Available values: thin, thick and ascii
   # Use ascii if you want to further process the output of this application
   table: thin
+  # Convert prices to the desired currency
+  convert: usd
 
 # Configure your purchases
 trades:
@@ -787,9 +789,10 @@ class Fetch(object):
         'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
     ]
 
-    def __init__(self, randomize_ua=True):
+    def __init__(self, convert, randomize_ua=True):
         '''Initialize'''
         self.__settings = {
+            'convert': convert,
             'randomize_ua': randomize_ua
         }
 
@@ -804,6 +807,9 @@ class Fetch(object):
         headers = dict()
         if self.__settings['randomize_ua']:
             headers = {'User-Agent': self.__get_ua()}
+
+        if 'convert' in self.__settings:
+            url += '&convert=' + str(self.__settings['convert']).upper()
 
         req = Request(url, headers=headers)
         try:
@@ -876,7 +882,7 @@ class Coinwatch(object):
         return Num.div(invest, amount)
 
     @staticmethod
-    def __extract_trade_row_values(currency, trade):
+    def __extract_trade_row_values(currency, trade, convert):
         '''
         Extract values of one trade list item, calculate all other necessary
         values and combine with current price and crypto name.
@@ -885,7 +891,7 @@ class Coinwatch(object):
         amount = Coinwatch.__get_amount(trade)
         invest = Coinwatch.__get_invest(trade)
         buyprice = Coinwatch.__get_price(trade)
-        nowprice = Num.get(currency['price_usd'])
+        nowprice = Num.get(currency['price_' + convert])
 
         # Calculate diffprice, wealth, profit and percent
         diffprice = Num.sub(nowprice, buyprice)
@@ -900,10 +906,10 @@ class Coinwatch(object):
             currency['percent_change_24h'] = Num.get('0.0')
         if not Num.isnumber(currency['percent_change_7d']):
             currency['percent_change_7d'] = Num.get('0.0')
-        if not Num.isnumber(currency['24h_volume_usd']):
-            currency['24h_volume_usd'] = Num.get('0.0')
-        if not Num.isnumber(currency['market_cap_usd']):
-            currency['market_cap_usd'] = Num.get('0.0')
+        if not Num.isnumber(currency['24h_volume_' + convert]):
+            currency['24h_volume_' + convert] = Num.get('0.0')
+        if not Num.isnumber(currency['market_cap_' + convert]):
+            currency['market_cap_' + convert] = Num.get('0.0')
         if not Num.isnumber(currency['available_supply']):
             currency['available_supply'] = Num.get('0.0')
         if not Num.isnumber(currency['total_supply']):
@@ -928,8 +934,8 @@ class Coinwatch(object):
             'percent1h':  currency['percent_change_1h'],
             'percent24h': currency['percent_change_24h'],
             'percent7d':  currency['percent_change_7d'],
-            'vol_24h':    currency['24h_volume_usd'],
-            'marketcap':  currency['market_cap_usd'],
+            'vol_24h':    currency['24h_volume_' + convert],
+            'marketcap':  currency['market_cap_' + convert],
             'supply_a':   currency['available_supply'],
             'supply_t':   currency['total_supply'],
             'supply_m':   currency['max_supply']
@@ -1054,7 +1060,8 @@ class Coinwatch(object):
                     for trade in trades[name]:
 
                         # Extract and format row values
-                        values = self.__extract_trade_row_values(currency, trade)
+                        convert = self.__settings['convert']
+                        values = self.__extract_trade_row_values(currency, trade, convert)
                         fvalues = self.__format_trade_row_values(values)
 
                         # Add row
@@ -1344,6 +1351,16 @@ def build_settings(settings, config, default_columns, default_sort, default_orde
         # Nowhere set, use defaults
         settings['table'] = 'thin'
 
+    # Apply currency conversion
+    if settings['convert']:
+        # Set via cmd args, all good
+        pass
+    elif 'convert' in config['config'] and config['config']['convert']:
+        # Available in configuration file
+        settings['convert'] = config['config']['convert']
+    else:
+        # Nowhere set, use defaults
+        settings['convert'] = 'usd'
     return settings
 
 
@@ -1458,6 +1475,7 @@ def main(argv):
 
     # Default settings if not otherwise specified via config or cmd args
     settings = {
+        'convert': None,     # Convert prices to currency
         'path':    None,     # Path to configuration file
         'color':   True,     # Colorize output
         'human':   False,    # Human readable number format
@@ -1482,7 +1500,7 @@ def main(argv):
     # Merge cmd args and config file settings
     settings = build_settings(settings, config, COL_DEFAULT, None, 'asc')
     # Get remote price info
-    url = Fetch(True)
+    url = Fetch(settings['convert'])
     try:
         currencies = to_json(url.fetch(API_URL))
     except HTTPError as err:
@@ -1516,13 +1534,14 @@ def main(argv):
 
     # Initialize and run Coinwatch
     cowa = Coinwatch({
-        'color':  settings['color'],  # Colorize output?
-        'human':  settings['human'],  # Humanize number output?
-        'sort':   settings['sort'],   # Column to sort
-        'order':  settings['order'],  # Sort order
-        'group':  settings['group'],  # Group column
-        'table':  settings['table'],  # Table border style
-        'cols':   settings['cols']    # Columns to display
+        'color':   settings['color'],       # Colorize output?
+        'convert': settings['convert'],     # Convert currency
+        'human':   settings['human'],       # Humanize number output?
+        'sort':    settings['sort'],        # Column to sort
+        'order':   settings['order'],       # Sort order
+        'group':   settings['group'],       # Group column
+        'table':   settings['table'],       # Table border style
+        'cols':    settings['cols']         # Columns to display
     }, COL_SETTINGS)
     cowa.print_stats(currencies, config['trades'])
 
