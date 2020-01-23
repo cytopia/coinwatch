@@ -17,6 +17,7 @@ BINNAME = coinwatch
 # -------------------------------------------------------------------------------------------------
 help:
 	@echo "lint             Lint source code"
+	@echo "test             Test source code"
 	@echo "build            Build Python package"
 	@echo "dist             Create source and binary distribution"
 	@echo "sdist            Create source distribution"
@@ -38,6 +39,105 @@ pydocstyle:
 
 black:
 	docker run --rm -v ${PWD}:/data cytopia/black -l 100 --check --diff $(BINPATH)$(BINNAME)
+
+
+# -------------------------------------------------------------------------------------------------
+# Test Targets
+# -------------------------------------------------------------------------------------------------
+
+test: test-default test-human test-verbose test-ascii test-sort test-example test-row
+
+
+test-default:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test default"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -c example/config.yml; do sleep 1; done"
+
+test-human:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test human"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -h; do sleep 1; done"
+
+test-verbose:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test verbose"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -v; do sleep 1; done"
+
+test-ascii:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test ascii"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -t ascii; do sleep 1; done"
+
+test-sort:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test sort"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -s profit -o desc -g profit; do sleep 1; done"
+
+test-example:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test example"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -c example/config.yml; do sleep 1; done"
+
+test-row:
+	@echo "--------------------------------------------------------------------------------"
+	@echo " Test row"
+	@echo "--------------------------------------------------------------------------------"
+	docker run \
+		--rm \
+		$$(tty -s && echo "-it" || echo) \
+		-v $(PWD):/data \
+		-w /data \
+		python:$(VERSION)-alpine \
+		sh -c "pip install -r requirements.txt \
+			&& while ! ./bin/coinwatch -r 'name diffprice amount invest wealth profit'; do sleep 1; done"
 
 
 # -------------------------------------------------------------------------------------------------

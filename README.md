@@ -20,6 +20,7 @@
 
 [![Build Status](https://travis-ci.org/cytopia/coinwatch.svg?branch=master)](https://travis-ci.org/cytopia/coinwatch)
 [![Build Status](https://github.com/cytopia/coinwatch/workflows/linting/badge.svg)](https://github.com/cytopia/coinwatch/actions?workflow=linting)
+[![Build Status](https://github.com/cytopia/coinwatch/workflows/testing/badge.svg)](https://github.com/cytopia/coinwatch/actions?workflow=testing)
 
 
 Coinwatch is a low-dependency python-based console client client to keep track of your crypto trades and easily let's you see if you are winning or losing.
