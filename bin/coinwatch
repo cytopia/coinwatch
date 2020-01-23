@@ -5,7 +5,7 @@
 #
 # Copyright (c) 2018 cytopia <cytopia@everythingcli.org>
 
-'''
+"""
 Coinwatch is a low-dependency python[23] client to keep track of your
 crypto trades and easily let's you see if you are winning or losing.
 
@@ -14,7 +14,7 @@ Trade at your own risk! And only invest what you can effort to lose.
 
 Currently supported API's are:
   - coinmarketcap
-'''
+"""
 
 
 ############################################################
@@ -49,7 +49,7 @@ import yaml
 # Force Python2 to use utf8
 try:
     reload(sys)  # noqa
-    sys.setdefaultencoding('utf8')
+    sys.setdefaultencoding("utf8")
 except Exception:
     # Not required and won't work on Python3, so
     # do not break on error, but just be silent.
@@ -60,77 +60,77 @@ except Exception:
 # Globals
 ############################################################
 
-NAME = 'coinwatch'
-AUTHOR = 'cytopia'
-VERSION = '0.15'
-API_URL = 'https://api.coinmarketcap.com/v1/ticker/?limit=0'
+NAME = "coinwatch"
+AUTHOR = "cytopia"
+VERSION = "0.16.0"
+API_URL = "https://api.coinmarketcap.com/v1/ticker/?limit=0"
 
 
 # Row settings
 COL_SETTINGS = {
     # colname    #col width    #col align     #precision   #color          #headline
-    'name':      {'width': 13, 'align': '<', 'prec': None, 'color': False, 'head': 'CURRENCY'},
-    'symbol':    {'width':  7, 'align': '<', 'prec': None, 'color': False, 'head': 'SYMBOL'},
-    'cust1':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 1'},
-    'cust2':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 2'},
-    'cust3':     {'width': 10, 'align': '<', 'prec': None, 'color': False, 'head': 'CUST 3'},
-    'buyprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ BUY PRICE/c'},
-    'diffprice': {'width': 15, 'align': '>', 'prec':    6, 'color': True, 'head': '$ DIFF PRICE/c'},
-    'nowprice':  {'width': 14, 'align': '>', 'prec':    6, 'color': False, 'head': '$ NOW PRICE/c'},
-    'amount':    {'width': 16, 'align': '>', 'prec':    6, 'color': False, 'head': 'NUM COINS'},
-    'invest':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ INVEST'},
-    'wealth':    {'width': 10, 'align': '>', 'prec':    2, 'color': False, 'head': '$ WEALTH'},
-    'profit':    {'width': 12, 'align': '>', 'prec':    2, 'color': True, 'head': '$ PROFIT'},
-    'percent':   {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': 'PERCENT'},
-    'percent1h': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 1h'},
-    'percent24h': {'width': 7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 24h'},
-    'percent7d': {'width':  7, 'align': '>', 'prec':    1, 'color': True, 'head': '% 7d'},
-    'vol_24h':   {'width': 14, 'align': '>', 'prec':    0, 'color': False, 'head': '$ VOL 24h'},
-    'marketcap': {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': '$ MARKET CAP'},
-    'supply_a':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'AVAIL SUPPLY'},
-    'supply_t':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'TOTAL SUPPLY'},
-    'supply_m':  {'width': 15, 'align': '>', 'prec':    0, 'color': False, 'head': 'MAX SUPPLY'}
+    "name": {"width": 13, "align": "<", "prec": None, "color": False, "head": "CURRENCY"},
+    "symbol": {"width": 7, "align": "<", "prec": None, "color": False, "head": "SYMBOL"},
+    "cust1": {"width": 10, "align": "<", "prec": None, "color": False, "head": "CUST 1"},
+    "cust2": {"width": 10, "align": "<", "prec": None, "color": False, "head": "CUST 2"},
+    "cust3": {"width": 10, "align": "<", "prec": None, "color": False, "head": "CUST 3"},
+    "buyprice": {"width": 14, "align": ">", "prec": 6, "color": False, "head": "$ BUY PRICE/c"},
+    "diffprice": {"width": 15, "align": ">", "prec": 6, "color": True, "head": "$ DIFF PRICE/c"},
+    "nowprice": {"width": 14, "align": ">", "prec": 6, "color": False, "head": "$ NOW PRICE/c"},
+    "amount": {"width": 16, "align": ">", "prec": 6, "color": False, "head": "NUM COINS"},
+    "invest": {"width": 10, "align": ">", "prec": 2, "color": False, "head": "$ INVEST"},
+    "wealth": {"width": 10, "align": ">", "prec": 2, "color": False, "head": "$ WEALTH"},
+    "profit": {"width": 12, "align": ">", "prec": 2, "color": True, "head": "$ PROFIT"},
+    "percent": {"width": 7, "align": ">", "prec": 1, "color": True, "head": "PERCENT"},
+    "percent1h": {"width": 7, "align": ">", "prec": 1, "color": True, "head": "% 1h"},
+    "percent24h": {"width": 7, "align": ">", "prec": 1, "color": True, "head": "% 24h"},
+    "percent7d": {"width": 7, "align": ">", "prec": 1, "color": True, "head": "% 7d"},
+    "vol_24h": {"width": 14, "align": ">", "prec": 0, "color": False, "head": "$ VOL 24h"},
+    "marketcap": {"width": 15, "align": ">", "prec": 0, "color": False, "head": "$ MARKET CAP"},
+    "supply_a": {"width": 15, "align": ">", "prec": 0, "color": False, "head": "AVAIL SUPPLY"},
+    "supply_t": {"width": 15, "align": ">", "prec": 0, "color": False, "head": "TOTAL SUPPLY"},
+    "supply_m": {"width": 15, "align": ">", "prec": 0, "color": False, "head": "MAX SUPPLY"},
 }
 # All available columns
 COL_AVAILABLE = [
-    'name',
-    'symbol',
-    'cust1',
-    'cust2',
-    'cust3',
-    'buyprice',
-    'diffprice',
-    'nowprice',
-    'amount',
-    'invest',
-    'wealth',
-    'profit',
-    'percent',
-    'percent1h',
-    'percent24h',
-    'percent7d',
-    'vol_24h',
-    'marketcap',
-    'supply_a',
-    'supply_t',
-    'supply_m'
+    "name",
+    "symbol",
+    "cust1",
+    "cust2",
+    "cust3",
+    "buyprice",
+    "diffprice",
+    "nowprice",
+    "amount",
+    "invest",
+    "wealth",
+    "profit",
+    "percent",
+    "percent1h",
+    "percent24h",
+    "percent7d",
+    "vol_24h",
+    "marketcap",
+    "supply_a",
+    "supply_t",
+    "supply_m",
 ]
 # Default columns to display if not otherwise overwritten via
 # configuration file or command line arguments
 COL_DEFAULT = [
-    'symbol',
-    'buyprice',
-    'diffprice',
-    'nowprice',
-    'amount',
-    'invest',
-    'wealth',
-    'profit',
-    'percent'
+    "symbol",
+    "buyprice",
+    "diffprice",
+    "nowprice",
+    "amount",
+    "invest",
+    "wealth",
+    "profit",
+    "percent",
 ]
 
 
-EXAMPLE_CONFIG = '''---
+EXAMPLE_CONFIG = """---
 #
 # coinwatch config
 #
@@ -225,49 +225,50 @@ trades:
       cust1:   2017-12-05
       cust2:   cryptopia
   iota: []
-'''
+"""
 
 
 ############################################################
 # Class: Color
 ############################################################
 
+
 class Color(object):
-    '''Class that returns shell color codes if desired.'''
+    """Class that returns shell color codes if desired."""
 
     def __init__(self, enable):
-        '''Enable or disable color support'''
+        """Enable or disable color support"""
         if enable:
-            self.__clr_blue = '\033[94m'
-            self.__clr_green = '\033[92m'
-            self.__clr_yellow = '\033[93m'
-            self.__clr_red = '\033[91m'
-            self.__clr_reset = '\033[0m'
+            self.__clr_blue = "\033[94m"
+            self.__clr_green = "\033[92m"
+            self.__clr_yellow = "\033[93m"
+            self.__clr_red = "\033[91m"
+            self.__clr_reset = "\033[0m"
         else:
-            self.__clr_blue = ''
-            self.__clr_green = ''
-            self.__clr_yellow = ''
-            self.__clr_red = ''
-            self.__clr_reset = ''
+            self.__clr_blue = ""
+            self.__clr_green = ""
+            self.__clr_yellow = ""
+            self.__clr_red = ""
+            self.__clr_reset = ""
 
     def blue(self):
-        '''Return blue color code'''
+        """Return blue color code"""
         return self.__clr_blue
 
     def green(self):
-        '''Return green color code'''
+        """Return green color code"""
         return self.__clr_green
 
     def yellow(self):
-        '''Return yellow color code'''
+        """Return yellow color code"""
         return self.__clr_yellow
 
     def red(self):
-        '''Return red color code'''
+        """Return red color code"""
         return self.__clr_red
 
     def reset(self):
-        '''Return reset color code'''
+        """Return reset color code"""
         return self.__clr_reset
 
 
@@ -275,52 +276,53 @@ class Color(object):
 # Class: Num
 ############################################################
 
+
 class Num(object):
-    '''Wrapper to ensure correct variable type for numbers'''
+    """Wrapper to ensure correct variable type for numbers"""
 
     __precision = 45
 
     @staticmethod
     def __num(number):
-        '''Convert to correct format'''
+        """Convert to correct format"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return Decimal(str(number))
 
     @staticmethod
     def __zero():
-        '''Get zero'''
+        """Get zero"""
         return Num.__num(0)
 
     @staticmethod
     def get(number):
-        '''Make sure to use Decimal'''
+        """Make sure to use Decimal"""
         return Num.__num(number)
 
     @staticmethod
     def sum(num1, num2):
-        '''Addition'''
+        """Addition"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return Num.__num(num1) + Num.__num(num2)
 
     @staticmethod
     def sub(num1, num2):
-        '''Substraction'''
+        """Substraction"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return Num.__num(num1) - Num.__num(num2)
 
     @staticmethod
     def mul(num1, num2):
-        '''Multiplication'''
+        """Multiplication"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return Num.__num(num1) * Num.__num(num2)
 
     @staticmethod
     def div(num1, num2):
-        '''Division'''
+        """Division"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             if Num.iszero(num2):
@@ -329,19 +331,19 @@ class Num(object):
 
     @staticmethod
     def iszero(number):
-        '''Check if number is zero'''
+        """Check if number is zero"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             return bool(Num.__num(number) == Num.__zero())
 
     @staticmethod
     def isint(number):
-        '''Check if string is a valid integer'''
+        """Check if string is a valid integer"""
         return str(number).isdigit()
 
     @staticmethod
     def isnumber(number):
-        '''Check if string is a valid number'''
+        """Check if string is a valid number"""
         try:
             Num.__num(number)
             return True
@@ -351,47 +353,45 @@ class Num(object):
 
     @staticmethod
     def percent(whole, part):
-        '''Percent'''
-        return Num.div(
-            Num.mul(100, whole),
-            part
-        )
+        """Percent"""
+        return Num.div(Num.mul(100, whole), part)
 
     @staticmethod
     def round(number, precision):
-        '''Round a number to the given precision'''
+        """Round a number to the given precision"""
         with localcontext() as ctx:
             ctx.prec = Num.__precision
             # E.g.: precision=3: '1.000'
-            quantizer = Decimal(str('1.' + str('0' * precision)))
+            quantizer = Decimal(str("1." + str("0" * precision)))
             return Num.__num(number).quantize(quantizer)
 
     @staticmethod
     def to_string(number, precision):
-        '''Return string value and round to Xth precision'''
+        """Return string value and round to Xth precision"""
         number = Num.round(number, precision)
-        return ('{0:,.' + str(precision) + 'f}').format(number)
+        return ("{0:,." + str(precision) + "f}").format(number)
 
 
 ############################################################
 # Class: Table
 ############################################################
 
+
 class Table(object):
-    '''Custom command line table drawer class'''
+    """Custom command line table drawer class"""
 
     # Table content
     __data = {
-        'rows': [],   # The actual rows of the table (sortable and groupable)
-        'heads': [],  # Header rows (not sortable, not groupable)
-        'foots': []   # Footer rows (not sortable, not groupable)
+        "rows": [],  # The actual rows of the table (sortable and groupable)
+        "heads": [],  # Header rows (not sortable, not groupable)
+        "foots": [],  # Footer rows (not sortable, not groupable)
     }
 
     # Defaults if not set
     __defaults = {
-        'width': 10,      # Default column width
-        'align': '<',     # Default column alignt.('<': left, '=': center, '>':right)
-        'border': 'thin'  # Default table border
+        "width": 10,  # Default column width
+        "align": "<",  # Default column alignt.('<': left, '=': center, '>':right)
+        "border": "thin",  # Default table border
     }
 
     # Name of columns that can be added to the table.
@@ -413,55 +413,55 @@ class Table(object):
 
     # Available table border styles
     __sym_border = {
-        'ascii': {
-            'top-lft': '|',
-            'top-rgt': '|',
-            'top-cen': '-',
-            'mid-lft': '|',
-            'mid-rgt': '|',
-            'mid-cen': '|',
-            'bot-lft': '|',
-            'bot-rgt': '|',
-            'bot-cen': '-',
-            'hor-sep': '-',
-            'ver-sep': '|',
-            'asc':     '>',
-            'desc':    '<'
+        "ascii": {
+            "top-lft": "|",
+            "top-rgt": "|",
+            "top-cen": "-",
+            "mid-lft": "|",
+            "mid-rgt": "|",
+            "mid-cen": "|",
+            "bot-lft": "|",
+            "bot-rgt": "|",
+            "bot-cen": "-",
+            "hor-sep": "-",
+            "ver-sep": "|",
+            "asc": ">",
+            "desc": "<",
         },
-        'thin': {
-            'top-lft': '┌',
-            'top-rgt': '┐',
-            'top-cen': '┬',
-            'mid-lft': '├',
-            'mid-rgt': '┤',
-            'mid-cen': '┼',
-            'bot-lft': '└',
-            'bot-rgt': '┘',
-            'bot-cen': '┴',
-            'hor-sep': '─',
-            'ver-sep': '│',
-            'asc':     '»',
-            'desc':    '«'
+        "thin": {
+            "top-lft": "┌",
+            "top-rgt": "┐",
+            "top-cen": "┬",
+            "mid-lft": "├",
+            "mid-rgt": "┤",
+            "mid-cen": "┼",
+            "bot-lft": "└",
+            "bot-rgt": "┘",
+            "bot-cen": "┴",
+            "hor-sep": "─",
+            "ver-sep": "│",
+            "asc": "»",
+            "desc": "«",
         },
-        'thick': {
-            'top-lft': '╔',
-            'top-rgt': '╗',
-            'top-cen': '╦',
-            'mid-lft': '╠',
-            'mid-rgt': '╣',
-            'mid-cen': '╬',
-            'bot-lft': '╚',
-            'bot-rgt': '╝',
-            'bot-cen': '╩',
-            'hor-sep': '═',
-            'ver-sep': '║',
-            'asc':     '»',
-            'desc':    '«'
-        }
+        "thick": {
+            "top-lft": "╔",
+            "top-rgt": "╗",
+            "top-cen": "╦",
+            "mid-lft": "╠",
+            "mid-rgt": "╣",
+            "mid-cen": "╬",
+            "bot-lft": "╚",
+            "bot-rgt": "╝",
+            "bot-cen": "╩",
+            "hor-sep": "═",
+            "ver-sep": "║",
+            "asc": "»",
+            "desc": "«",
+        },
     }
 
     def __init__(self, columns, border):
-        '''
+        """
         Initializes the Table object
 
         columns   list of coumn names. E.g.: ['colname1', 'colname2', 'colname3']
@@ -470,17 +470,17 @@ class Table(object):
                   Those names are later used to change order, width, grouping
                   as well as what columns to actually display.
         border    What table border to use
-        '''
+        """
         # Store number of columns
         self.__columns = columns
 
         # Set table border style
-        if border == 'thin':
-            self.__sym = self.__sym_border['thin']
-        elif border == 'thick':
-            self.__sym = self.__sym_border['thick']
+        if border == "thin":
+            self.__sym = self.__sym_border["thin"]
+        elif border == "thick":
+            self.__sym = self.__sym_border["thick"]
         else:
-            self.__sym = self.__sym_border['ascii']
+            self.__sym = self.__sym_border["ascii"]
 
         # Set colum aligns and width with defaults
         self.set_col_aligns()
@@ -488,37 +488,37 @@ class Table(object):
 
     @staticmethod
     def __remove_ansi(string):
-        '''Remove ANSI escape sequences and spaces'''
-        regex = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]', re.UNICODE)
-        return regex.sub('', str(string))
+        """Remove ANSI escape sequences and spaces"""
+        regex = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]", re.UNICODE)
+        return regex.sub("", str(string))
 
     @staticmethod
     def __ansilen(string):
-        '''Get string length without ansi escape codes'''
+        """Get string length without ansi escape codes"""
         return len(Table.__remove_ansi(string))
 
     def __sort_rows(self, column=None, reverse=False):
-        '''Sort all data rows (excluding headers and footers by given column)'''
+        """Sort all data rows (excluding headers and footers by given column)"""
 
         # Only sort if the sort key actually exists
         if column in self.__columns:
             # Try to sort float numbers
             try:
-                self.__data['rows'] = sorted(
-                    self.__data['rows'],
-                    key=lambda x: float(Table.__remove_ansi(x[column]).replace(',', '')),
-                    reverse=reverse
+                self.__data["rows"] = sorted(
+                    self.__data["rows"],
+                    key=lambda x: float(Table.__remove_ansi(x[column]).replace(",", "")),
+                    reverse=reverse,
                 )
             # Fall-back on string sort
             except ValueError:
-                self.__data['rows'] = sorted(
-                    self.__data['rows'],
+                self.__data["rows"] = sorted(
+                    self.__data["rows"],
                     key=lambda x: Table.__remove_ansi(x[column]),
-                    reverse=reverse
+                    reverse=reverse,
                 )
 
-    def __get_row(self, display_columns, data, align_type='row', sort_col=None, sort_order=None):
-        '''
+    def __get_row(self, display_columns, data, align_type="row", sort_col=None, sort_order=None):
+        """
         Returns the formatted row string by applying format()
 
         display_columns  List of columns to actually display.
@@ -529,22 +529,22 @@ class Table(object):
         The following two arguments are only relevant to the first header row.
         sort_col         When specified, add a sort indicator to this column
         sort_order       When specified, set the direction of the sort indicator
-        '''
+        """
         # Get symbols in local var for better readability
         sym = self.__sym
 
         # Start with left cell separator
-        row = sym['ver-sep']
+        row = sym["ver-sep"]
 
         # Create row format with correct alignment and width
         for column in display_columns:
             # 1. Get alignment
-            if align_type == 'head':
-                align = '<'  # self.__col_settings[column]['align']
+            if align_type == "head":
+                align = "<"  # self.__col_settings[column]['align']
             else:
-                align = self.__col_settings[column]['align']
+                align = self.__col_settings[column]["align"]
             # 2. Get width
-            width = self.__col_settings[column]['width']
+            width = self.__col_settings[column]["width"]
             # 3. Adjust width in case our string contains ANSI escape sequences
             if len(str(data[column])) != Table.__ansilen(data[column]):
                 diff = len(str(data[column])) - Table.__ansilen(data[column])
@@ -552,14 +552,14 @@ class Table(object):
 
             if column == sort_col:
                 # The first header row adds a sort-order indicator to the column sorted by.
-                row += ' {:' + align + str(width) + '}' + sym[sort_order] + sym['ver-sep']
+                row += " {:" + align + str(width) + "}" + sym[sort_order] + sym["ver-sep"]
             else:
-                row += ' {:' + align + str(width) + '} ' + sym['ver-sep']
+                row += " {:" + align + str(width) + "} " + sym["ver-sep"]
 
         return row.format(*[data[col] for col in display_columns])
 
     def __get_sep(self, display_columns, position):
-        '''
+        """
         Returns the formatted separator string by applying format().
 
         display_columns  List of columns to actually display.
@@ -569,99 +569,106 @@ class Table(object):
                          'top': First separator that starts the table
                          'mid': Separator between rows
                          'bot': Last separator that closes the table
-        '''
+        """
         # Get symbols in local var for better readability
         sym = self.__sym
 
         # Start with left cell separator
-        row = sym[position + '-lft']
+        row = sym[position + "-lft"]
 
         # Create row format based on columns to display
         for column in display_columns:
             # 1. Get width
-            width = self.__col_settings[column]['width']
-            row += sym['hor-sep'] + \
-                '{:' + sym['hor-sep'] + '<' + str(width) + '}' + \
-                sym['hor-sep'] + sym[position + '-cen']
+            width = self.__col_settings[column]["width"]
+            row += (
+                sym["hor-sep"]
+                + "{:"
+                + sym["hor-sep"]
+                + "<"
+                + str(width)
+                + "}"
+                + sym["hor-sep"]
+                + sym[position + "-cen"]
+            )
 
-        row = row[:-1] + sym[position + '-rgt']  # Adjust last char
-        return row.format(*['' for i in range(len(display_columns))])
+        row = row[:-1] + sym[position + "-rgt"]  # Adjust last char
+        return row.format(*["" for i in range(len(display_columns))])
 
     def set_col_widths(self, widths=dict()):
-        '''
+        """
         Set colum widths.
         If colum width is not set, default_width will be used.
 
         widths   Dictionary of widths.
                  E.g.: list('name': 10, 'col2': 20)
                  It must match the index names specified in __init__
-        '''
+        """
         # Loop over available columns and see if width for it is specified.
         # If not specified for a column, use the Class's default width.
         for col in self.__columns:
             if col in widths:
                 if col in self.__col_settings:
-                    self.__col_settings[col]['width'] = widths[col]
+                    self.__col_settings[col]["width"] = widths[col]
                 else:
-                    self.__col_settings[col] = {'width': widths[col]}
+                    self.__col_settings[col] = {"width": widths[col]}
             else:
                 if col in self.__col_settings:
-                    self.__col_settings[col]['width'] = self.__defaults['width']
+                    self.__col_settings[col]["width"] = self.__defaults["width"]
                 else:
-                    self.__col_settings[col] = {'width': self.__defaults['width']}
+                    self.__col_settings[col] = {"width": self.__defaults["width"]}
 
     def set_col_aligns(self, aligns=dict()):
-        '''
+        """
         Set colum alignments.
         If colum align is not set, default_align will be used.
 
         aligns   Dictionary of aligns.
                  E.g.: list('name': '<', 'col2': '=')
                  It must match the index names specified in __init__
-        '''
+        """
         # Loop over available columns and see if align for it is specified.
         # If not specified for a column, use the Class's default align.
         for col in self.__columns:
             if col in aligns:
                 if col in self.__col_settings:
-                    self.__col_settings[col]['align'] = aligns[col]
+                    self.__col_settings[col]["align"] = aligns[col]
                 else:
-                    self.__col_settings[col] = {'align': aligns[col]}
+                    self.__col_settings[col] = {"align": aligns[col]}
             else:
                 if col in self.__col_settings:
-                    self.__col_settings[col]['align'] = self.__defaults['align']
+                    self.__col_settings[col]["align"] = self.__defaults["align"]
                 else:
-                    self.__col_settings[col] = {'align': self.__defaults['align']}
+                    self.__col_settings[col] = {"align": self.__defaults["align"]}
 
     def add_row(self, columns):
-        '''
+        """
         Add a new row to the table
         columns  Dictionary of columns to add to a row.
                  E.g.: list('name': val, 'col2': val)
                  It must match the index names specified in __init__
-        '''
-        self.__data['rows'].append(columns)
+        """
+        self.__data["rows"].append(columns)
 
     def add_header_row(self, columns):
-        '''
+        """
         Add a new headline row to the table
         columns  Dictionary of columns to add to a row.
                  E.g.: list('name': val, 'col2': val)
                  It must match the index names specified in __init__
-        '''
-        self.__data['heads'].append(columns)
+        """
+        self.__data["heads"].append(columns)
 
     def add_footer_row(self, columns):
-        '''
+        """
         Add a new footer row to the table
         columns  Dictionary of columns to add to a row.
                  E.g.: list('name': val, 'col2': val)
                  It must match the index names specified in __init__
-        '''
-        self.__data['foots'].append(columns)
+        """
+        self.__data["foots"].append(columns)
 
-    def draw(self, columns=None, sort_col=None, sort_order='asc', group_col=None):
-        '''
+    def draw(self, columns=None, sort_col=None, sort_order="asc", group_col=None):
+        """
         Draw the table.
 
         columns         List of columns to draw in the order it is in the list.
@@ -672,13 +679,11 @@ class Table(object):
         sort_order      Sort oder 'asc' or 'desc'.
         group_col       Group columns by this column name.
                         If not specified, no grouping will be done.
-        '''
-        print(
-            self.get(columns, sort_col, sort_order, group_col)
-        )
+        """
+        print(self.get(columns, sort_col, sort_order, group_col))
 
-    def get(self, columns=None, sort_col=None, sort_order='asc', group_col=None):
-        '''
+    def get(self, columns=None, sort_col=None, sort_order="asc", group_col=None):
+        """
         Return the table as string.
 
         columns         List of columns to get in the order it is in the list.
@@ -689,7 +694,7 @@ class Table(object):
         sort_order      Sort oder 'asc' or 'desc'.
         group_col       Group columns by this column name.
                         If not specified, no grouping will be done.
-        '''
+        """
 
         # What columns to display and in what order
         display_columns = []
@@ -699,12 +704,12 @@ class Table(object):
             display_columns = self.__columns
 
         # Get seperators
-        sep_top = self.__get_sep(display_columns, 'top')
-        sep_mid = self.__get_sep(display_columns, 'mid')
-        sep_bot = self.__get_sep(display_columns, 'bot')
+        sep_top = self.__get_sep(display_columns, "top")
+        sep_mid = self.__get_sep(display_columns, "mid")
+        sep_bot = self.__get_sep(display_columns, "bot")
 
         # Sort rows
-        if sort_order == 'asc':
+        if sort_order == "asc":
             self.__sort_rows(sort_col, False)
         else:
             self.__sort_rows(sort_col, True)
@@ -712,44 +717,44 @@ class Table(object):
         # Retrieve all data rows and also apply ppor man' grouping.
         rows = []
         group = None
-        for idx, row in enumerate(self.__data['rows']):
+        for idx, row in enumerate(self.__data["rows"]):
             row_format = self.__get_row(display_columns, row)
             if group_col is None:
                 if idx != 0:
-                    row_format = sep_mid + '\n' + row_format
+                    row_format = sep_mid + "\n" + row_format
             elif group is not None and row[group_col] == group:
                 pass
             else:
                 if idx == 0:
                     row_format = row_format
                 else:
-                    row_format = sep_mid + '\n' + row_format
+                    row_format = sep_mid + "\n" + row_format
                 group = row[group_col]
             rows.append(row_format)
 
         # Retrieve all header rows. This will also add a sort-order indicator
         # to the first header row at the corresponding column.
         heads = []
-        for idx, row in enumerate(self.__data['heads']):
+        for idx, row in enumerate(self.__data["heads"]):
             # First head row should have a sort-order indicator
             if idx == 0:
-                heads.append(self.__get_row(display_columns, row, 'head', sort_col, sort_order))
+                heads.append(self.__get_row(display_columns, row, "head", sort_col, sort_order))
             else:
-                heads.append(self.__get_row(display_columns, row, 'head'))
+                heads.append(self.__get_row(display_columns, row, "head"))
 
         foots = []
-        for row in self.__data['foots']:
+        for row in self.__data["foots"]:
             foots.append(self.__get_row(display_columns, row))
 
         # Build the table
-        table = sep_top + '\n'
+        table = sep_top + "\n"
 
         if heads:
-            table += ('\n' + sep_mid + '\n').join(heads) + '\n' + sep_mid + '\n'
+            table += ("\n" + sep_mid + "\n").join(heads) + "\n" + sep_mid + "\n"
         if rows:
-            table += ('\n').join(rows) + '\n'
+            table += ("\n").join(rows) + "\n"
         if foots:
-            table += sep_mid + '\n' + ('\n' + sep_mid + '\n').join(foots) + '\n'
+            table += sep_mid + "\n" + ("\n" + sep_mid + "\n").join(foots) + "\n"
 
         table += sep_bot
 
@@ -760,50 +765,49 @@ class Table(object):
 # Class: Fetch
 ############################################################
 
+
 class Fetch(object):
-    '''Fetch URL from remote'''
+    """Fetch URL from remote"""
 
     __settings = {
-        'randomize_ua': True,
+        "randomize_ua": True,
     }
     __useragents = [
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)',
-        'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.7.01001)',
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 5.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0',
-        'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1',
-        'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20100101 Firefox/5.02',
-        'Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0',
-        'Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)',
-        'Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01'
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0; .NET CLR 1.0.3705)",
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.5.01003)",
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.6.01001)",
+        "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; FSL 7.0.7.01001)",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.13; rv:57.0) Gecko/20100101 Firefox/57.0",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0",
+        "Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1",
+        "Mozilla/5.0 (Windows NT 5.1; rv:13.0) Gecko/20100101 Firefox/13.0.1",
+        "Mozilla/5.0 (Windows NT 5.1; rv:5.0.1) Gecko/20100101 Firefox/5.0.1",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:12.0) Gecko/20100101 Firefox/12.0",
+        "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20100101 Firefox/13.0.1",
+        "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:57.0) Gecko/20100101 Firefox/57.0",
+        "Mozilla/5.0 (Windows NT 6.1; rv:5.0) Gecko/20100101 Firefox/5.02",
+        "Mozilla/5.0 (X11; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0",
+        "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:57.0) Gecko/20100101 Firefox/57.0",
+        "Mozilla/5.0 (compatible; MSIE 9.0; Windows NT 6.1; WOW64; Trident/5.0)",
+        "Opera/9.80 (Windows NT 5.1; U; en) Presto/2.10.289 Version/12.01",
     ]
 
     def __init__(self, randomize_ua=True):
-        '''Initialize'''
-        self.__settings = {
-            'randomize_ua': randomize_ua
-        }
+        """Initialize"""
+        self.__settings = {"randomize_ua": randomize_ua}
 
     def __get_ua(self):
-        '''Get random useragent'''
-        index = randint(0, len(self.__useragents)-1)
+        """Get random useragent"""
+        index = randint(0, len(self.__useragents) - 1)
         return self.__useragents[index]
 
     def fetch(self, url):
-        '''Fetch url and return its body'''
+        """Fetch url and return its body"""
 
         headers = dict()
-        if self.__settings['randomize_ua']:
-            headers = {'User-Agent': self.__get_ua()}
+        if self.__settings["randomize_ua"]:
+            headers = {"User-Agent": self.__get_ua()}
 
         req = Request(url, headers=headers)
         try:
@@ -813,79 +817,80 @@ class Fetch(object):
         except URLError:
             raise
         else:
-            return response.read().decode('utf-8')
+            return response.read().decode("utf-8")
 
 
 ############################################################
 # Class: Coinwatch
 ############################################################
 
+
 class Coinwatch(object):
-    '''Coinwatch Class'''
+    """Coinwatch Class"""
 
     # General output settings
     __settings = {
-        'color': False,    # Colorize output?
-        'human': False,    # Humanize number output?
-        'sort':  None,     # Default sort column
-        'order': 'asc',    # Default sort order
-        'group': None,     # Default grouping
-        'table': 'thick',  # Table border style
-        'cols':  dict()    # Columns to display
+        "color": False,  # Colorize output?
+        "human": False,  # Humanize number output?
+        "sort": None,  # Default sort column
+        "order": "asc",  # Default sort order
+        "group": None,  # Default grouping
+        "table": "thick",  # Table border style
+        "cols": dict(),  # Columns to display
     }
 
     # Specific settings for each column
     __col_settings = dict()
 
     def __init__(self, settings, col_settings):
-        '''Set settings'''
+        """Set settings"""
         self.__settings = settings
         self.__col_settings = col_settings
 
     @staticmethod
     def __get_amount(trade):
-        '''Returns amount based on amount, invest and price'''
+        """Returns amount based on amount, invest and price"""
 
-        if 'amount' in trade:
-            return Num.get(trade['amount'])
+        if "amount" in trade:
+            return Num.get(trade["amount"])
         # amount needs to be calculated
-        invest = Num.get(trade.get('invest', 0))
-        price = Num.get(trade.get('price', 0))
+        invest = Num.get(trade.get("invest", 0))
+        price = Num.get(trade.get("price", 0))
         return Num.div(invest, price)
 
     @staticmethod
     def __get_invest(trade):
-        '''Returns invest based on amount, invest and price'''
+        """Returns invest based on amount, invest and price"""
 
-        if 'invest' in trade:
-            return Num.get(trade['invest'])
+        if "invest" in trade:
+            return Num.get(trade["invest"])
         # Invest needs to be calculated
-        amount = Num.get(trade.get('amount', 0))
-        price = Num.get(trade.get('price', 0))
+        amount = Num.get(trade.get("amount", 0))
+        price = Num.get(trade.get("price", 0))
         return Num.mul(price, amount)
 
     @staticmethod
     def __get_price(trade):
-        '''Returns price based on amount, invest and price'''
+        """Returns price based on amount, invest and price"""
 
-        if 'price' in trade:
-            return Num.get(trade['price'])
+        if "price" in trade:
+            return Num.get(trade["price"])
         # Price needs to be calculated
-        invest = Num.get(trade.get('invest', 0))
-        amount = Num.get(trade.get('amount', 0))
+        invest = Num.get(trade.get("invest", 0))
+        amount = Num.get(trade.get("amount", 0))
         return Num.div(invest, amount)
 
     @staticmethod
     def __extract_trade_row_values(currency, trade):
-        '''
+        """
         Extract values of one trade list item, calculate all other necessary
         values and combine with current price and crypto name.
         trade: {cust1, cust2, cust3, price, invest, amount}
-        '''
+        """
         amount = Coinwatch.__get_amount(trade)
         invest = Coinwatch.__get_invest(trade)
         buyprice = Coinwatch.__get_price(trade)
-        nowprice = Num.get(currency['price_usd'])
+        nowprice = Num.get(currency["price_usd"])
 
         # Calculate diffprice, wealth, profit and percent
         diffprice = Num.sub(nowprice, buyprice)
@@ -894,80 +899,80 @@ class Coinwatch(object):
         percent = Num.sub(Num.percent(wealth, invest), 100)
 
         # Normalize values from remote
-        if not Num.isnumber(currency['percent_change_1h']):
-            currency['percent_change_1h'] = Num.get('0.0')
-        if not Num.isnumber(currency['percent_change_24h']):
-            currency['percent_change_24h'] = Num.get('0.0')
-        if not Num.isnumber(currency['percent_change_7d']):
-            currency['percent_change_7d'] = Num.get('0.0')
-        if not Num.isnumber(currency['24h_volume_usd']):
-            currency['24h_volume_usd'] = Num.get('0.0')
-        if not Num.isnumber(currency['market_cap_usd']):
-            currency['market_cap_usd'] = Num.get('0.0')
-        if not Num.isnumber(currency['available_supply']):
-            currency['available_supply'] = Num.get('0.0')
-        if not Num.isnumber(currency['total_supply']):
-            currency['total_supply'] = Num.get('0.0')
-        if not Num.isnumber(currency['max_supply']):
-            currency['max_supply'] = Num.get('0.0')
+        if not Num.isnumber(currency["percent_change_1h"]):
+            currency["percent_change_1h"] = Num.get("0.0")
+        if not Num.isnumber(currency["percent_change_24h"]):
+            currency["percent_change_24h"] = Num.get("0.0")
+        if not Num.isnumber(currency["percent_change_7d"]):
+            currency["percent_change_7d"] = Num.get("0.0")
+        if not Num.isnumber(currency["24h_volume_usd"]):
+            currency["24h_volume_usd"] = Num.get("0.0")
+        if not Num.isnumber(currency["market_cap_usd"]):
+            currency["market_cap_usd"] = Num.get("0.0")
+        if not Num.isnumber(currency["available_supply"]):
+            currency["available_supply"] = Num.get("0.0")
+        if not Num.isnumber(currency["total_supply"]):
+            currency["total_supply"] = Num.get("0.0")
+        if not Num.isnumber(currency["max_supply"]):
+            currency["max_supply"] = Num.get("0.0")
 
         return {
-            'name':       currency['id'],
-            'symbol':     currency['symbol'],
-            'cust1':      str(trade.get('cust1', '')),
-            'cust2':      str(trade.get('cust2', '')),
-            'cust3':      str(trade.get('cust3', '')),
-            'buyprice':   buyprice,
-            'diffprice':  diffprice,
-            'nowprice':   nowprice,
-            'amount':     amount,
-            'invest':     invest,
-            'wealth':     wealth,
-            'profit':     profit,
-            'percent':    percent,
-            'percent1h':  currency['percent_change_1h'],
-            'percent24h': currency['percent_change_24h'],
-            'percent7d':  currency['percent_change_7d'],
-            'vol_24h':    currency['24h_volume_usd'],
-            'marketcap':  currency['market_cap_usd'],
-            'supply_a':   currency['available_supply'],
-            'supply_t':   currency['total_supply'],
-            'supply_m':   currency['max_supply']
+            "name": currency["id"],
+            "symbol": currency["symbol"],
+            "cust1": str(trade.get("cust1", "")),
+            "cust2": str(trade.get("cust2", "")),
+            "cust3": str(trade.get("cust3", "")),
+            "buyprice": buyprice,
+            "diffprice": diffprice,
+            "nowprice": nowprice,
+            "amount": amount,
+            "invest": invest,
+            "wealth": wealth,
+            "profit": profit,
+            "percent": percent,
+            "percent1h": currency["percent_change_1h"],
+            "percent24h": currency["percent_change_24h"],
+            "percent7d": currency["percent_change_7d"],
+            "vol_24h": currency["24h_volume_usd"],
+            "marketcap": currency["market_cap_usd"],
+            "supply_a": currency["available_supply"],
+            "supply_t": currency["total_supply"],
+            "supply_m": currency["max_supply"],
         }
 
     @staticmethod
     def __humanize_number(number, precision):
-        '''Human readable number format'''
+        """Human readable number format"""
         number = str(number)
-        fnumber = number.split('.')
+        fnumber = number.split(".")
         # Does it have decimal places?
         if len(fnumber) == 2:
             # Remove '0' from the rights
-            fnumber[1] = fnumber[1].rstrip('0')
+            fnumber[1] = fnumber[1].rstrip("0")
 
             # Have at least two '0' on the right if the precision is equal or higher
             while len(fnumber[1]) < 2 and len(fnumber[1]) < precision:
-                fnumber[1] = fnumber[1] + '0'
+                fnumber[1] = fnumber[1] + "0"
             # Fill up with spaces (for alignment)
             while len(fnumber[1]) < precision:
-                fnumber[1] = fnumber[1] + ' '
+                fnumber[1] = fnumber[1] + " "
 
             # Reconstruct
-            number = fnumber[0] + '.' + fnumber[1]
+            number = fnumber[0] + "." + fnumber[1]
 
         return number
 
     def __format_trade_row_values(self, values):
-        '''
+        """
         Use extracted trade row value dictionary and format
         it nicely based on given colum settings.
         col_settings   Holds settings for each column
         colorize       Global setting that determines whether to apply colors.
-        '''
+        """
         # Read settings into var for better readability
         col_settings = self.__col_settings
-        colorize = self.__settings['color']
-        humanize = self.__settings['human']
+        colorize = self.__settings["color"]
+        humanize = self.__settings["human"]
 
         clr = Color(colorize)
         fvalues = dict()
@@ -975,77 +980,76 @@ class Coinwatch(object):
             fvalues[val] = values[val]
 
             # 1. Rounding
-            if col_settings[val]['prec'] is not None and fvalues[val]:
-                fvalues[val] = Num.to_string(values[val], col_settings[val]['prec'])
+            if col_settings[val]["prec"] is not None and fvalues[val]:
+                fvalues[val] = Num.to_string(values[val], col_settings[val]["prec"])
             # 2. Humanize output
             if humanize:
-                fvalues[val] = Coinwatch.__humanize_number(
-                    fvalues[val],
-                    col_settings[val]['prec']
-                )
+                fvalues[val] = Coinwatch.__humanize_number(fvalues[val], col_settings[val]["prec"])
             # 3. Colorize
-            if col_settings[val]['color'] and fvalues[val]:
-                if Num.get(values[val]) < Num.get('0.0'):
+            if col_settings[val]["color"] and fvalues[val]:
+                if Num.get(values[val]) < Num.get("0.0"):
                     fvalues[val] = clr.red() + str(fvalues[val]) + clr.reset()
                 else:
                     fvalues[val] = clr.green() + str(fvalues[val]) + clr.reset()
         return fvalues
 
     def __format_summary_row_values(self, totals):
-        '''Format and return the summary row'''
-        return self.__format_trade_row_values({
-            'name':       '',
-            'symbol':     '',
-            'cust1':      '',
-            'cust2':      '',
-            'cust3':      '',
-            'buyprice':   '',
-            'diffprice':  '',
-            'nowprice':   '',
-            'amount':     '',
-            'invest':     totals['invest'],
-            'wealth':     totals['wealth'],
-            'profit':     totals['profit'],
-            'percent':    Num.sub(Num.percent(totals['wealth'], totals['invest']), 100),
-            'percent1h':  '',
-            'percent24h': '',
-            'percent7d':  '',
-            'vol_24h':    '',
-            'marketcap':  '',
-            'supply_a':   '',
-            'supply_t':   '',
-            'supply_m':   ''
-        })
+        """Format and return the summary row"""
+        return self.__format_trade_row_values(
+            {
+                "name": "",
+                "symbol": "",
+                "cust1": "",
+                "cust2": "",
+                "cust3": "",
+                "buyprice": "",
+                "diffprice": "",
+                "nowprice": "",
+                "amount": "",
+                "invest": totals["invest"],
+                "wealth": totals["wealth"],
+                "profit": totals["profit"],
+                "percent": Num.sub(Num.percent(totals["wealth"], totals["invest"]), 100),
+                "percent1h": "",
+                "percent24h": "",
+                "percent7d": "",
+                "vol_24h": "",
+                "marketcap": "",
+                "supply_a": "",
+                "supply_t": "",
+                "supply_m": "",
+            }
+        )
 
     def print_stats(self, currencies, trades):
-        '''Print trading stats in a nice table'''
+        """Print trading stats in a nice table"""
 
         # Total accumulated values
         totals = {
-            'invest': Decimal('0.0'),
-            'wealth': Decimal('0.0'),
-            'profit': Decimal('0.0'),
+            "invest": Decimal("0.0"),
+            "wealth": Decimal("0.0"),
+            "profit": Decimal("0.0"),
         }
 
         # Get columns to to display and their settings
-        display_columns = self.__settings['cols']
+        display_columns = self.__settings["cols"]
         col_settings = self.__col_settings
 
         # Initialize the table
-        tbl = Table(COL_AVAILABLE, self.__settings['table'])
-        tbl.set_col_widths({a: col_settings[a]['width'] for a in col_settings.keys()})
-        tbl.set_col_aligns({a: col_settings[a]['align'] for a in col_settings.keys()})
+        tbl = Table(COL_AVAILABLE, self.__settings["table"])
+        tbl.set_col_widths({a: col_settings[a]["width"] for a in col_settings.keys()})
+        tbl.set_col_aligns({a: col_settings[a]["align"] for a in col_settings.keys()})
 
         # # Add headline
-        tbl.add_header_row({a: col_settings[a]['head'] for a in col_settings.keys()})
+        tbl.add_header_row({a: col_settings[a]["head"] for a in col_settings.keys()})
 
         for currency in currencies:
 
             # Do we track a currency?
             # (Remote currency is found in local config)
-            if currency['id'] in trades:
+            if currency["id"] in trades:
 
-                name = currency['id']
+                name = currency["id"]
 
                 # Only proceed if trade happened (defined in config)
                 if trades[name]:
@@ -1061,9 +1065,9 @@ class Coinwatch(object):
                         tbl.add_row(fvalues)
 
                         # Calculate total accumulated values
-                        totals['invest'] = Num.sum(totals['invest'], values['invest'])
-                        totals['wealth'] = Num.sum(totals['wealth'], values['wealth'])
-                        totals['profit'] = Num.sum(totals['profit'], values['profit'])
+                        totals["invest"] = Num.sum(totals["invest"], values["invest"])
+                        totals["wealth"] = Num.sum(totals["wealth"], values["wealth"])
+                        totals["profit"] = Num.sum(totals["profit"], values["profit"])
 
         # Get overall summary
         fvalues = self.__format_summary_row_values(totals)
@@ -1074,9 +1078,9 @@ class Coinwatch(object):
         # Draw table
         tbl.draw(
             display_columns,
-            self.__settings['sort'],
-            self.__settings['order'],
-            self.__settings['group']
+            self.__settings["sort"],
+            self.__settings["order"],
+            self.__settings["group"],
         )
 
 
@@ -1084,18 +1088,19 @@ class Coinwatch(object):
 # Helper Functions
 ############################################################
 
+
 def logerr(*args):
-    '''Error wrapper for print function'''
-    print(''.join(map(str, args)), file=sys.stderr)
+    """Error wrapper for print function"""
+    print("".join(map(str, args)), file=sys.stderr)
 
 
 def to_yaml(string):
-    '''Convert string to yaml'''
+    """Convert string to yaml"""
     try:
         data = yaml.load(string)
     except yaml.YAMLError as err:
-        logerr('[ERR] Cannot convert string to yaml')
-        logerr('[ERR] ', str(err))
+        logerr("[ERR] Cannot convert string to yaml")
+        logerr("[ERR] ", str(err))
         return dict()
     else:
         if data is None:
@@ -1104,12 +1109,12 @@ def to_yaml(string):
 
 
 def to_json(string):
-    '''Convert string to json'''
+    """Convert string to json"""
     try:
         data = json.loads(string)
     except ValueError as err:
-        logerr('[ERR] Cannot convert to json')
-        logerr('[ERR] ', str(err))
+        logerr("[ERR] Cannot convert to json")
+        logerr("[ERR] ", str(err))
         return dict()
     else:
         if data is None:
@@ -1121,17 +1126,19 @@ def to_json(string):
 # Project Functions
 ############################################################
 
+
 def print_version():
-    '''Show program version'''
-    print(NAME, 'v' + VERSION)
-    print('Using Python ' + str(sys.version_info[0]) + '.' + str(sys.version_info[1]))
-    print('MIT License - Copyright (c) 2018 cytopia')
-    print('https://github.com/cytopia/coinwatch')
+    """Show program version"""
+    print(NAME, "v" + VERSION)
+    print("Using Python " + str(sys.version_info[0]) + "." + str(sys.version_info[1]))
+    print("MIT License - Copyright (c) 2018 cytopia")
+    print("https://github.com/cytopia/coinwatch")
 
 
 def print_help():
-    '''Show program help'''
-    print('''Usage: %s [-crsogtnhv]
+    """Show program help"""
+    print(
+        """Usage: %s [-crsogtnhv]
        %s [--help]
        %s [--version]
 
@@ -1183,172 +1190,173 @@ NOTE:
 
 CONFIGURATION:
   When starting %s for the first time a base configuration file will be
-  created in ~/.config/%s/config.yml''' %
-          (NAME, NAME, NAME, NAME, ' '.join(COL_AVAILABLE), NAME, NAME))
+  created in ~/.config/%s/config.yml"""
+        % (NAME, NAME, NAME, NAME, " ".join(COL_AVAILABLE), NAME, NAME)
+    )
 
 
 def get_config_path():
-    '''Get path of local config file'''
-    home = os.path.expanduser('~')
-    conf = os.path.join(home, '.config', NAME, 'config.yml')
+    """Get path of local config file"""
+    home = os.path.expanduser("~")
+    conf = os.path.join(home, ".config", NAME, "config.yml")
     return conf
 
 
 def read_config(path):
-    '''Read trades from local yaml configuration file'''
+    """Read trades from local yaml configuration file"""
     if not path:
         path = get_config_path()
 
     data = dict()
     if os.path.isfile(path):
-        with open(path, 'r') as stream:
+        with open(path, "r") as stream:
             data = to_yaml(stream)
 
     # Fill up defaults
-    if 'trades' not in data:
-        data['trades'] = dict()
-    if 'config' not in data:
-        data['config'] = dict()
+    if "trades" not in data:
+        data["trades"] = dict()
+    if "config" not in data:
+        data["config"] = dict()
 
     return data
 
 
 def validate_config(config):
-    '''Validate configuration file'''
+    """Validate configuration file"""
 
     # Validate config
-    if 'config' in config:
+    if "config" in config:
         # Columns
-        if 'columns' in config['config'] and config['config']['columns']:
-            for col in config['config']['columns'].split(' '):
+        if "columns" in config["config"] and config["config"]["columns"]:
+            for col in config["config"]["columns"].split(" "):
                 if col not in COL_AVAILABLE:
-                    logerr('[ERR] Invalid column name in config: \'' + col + '\'')
-                    logerr('[ERR] Valid column names: ' + ', '.join(COL_AVAILABLE))
+                    logerr("[ERR] Invalid column name in config: '" + col + "'")
+                    logerr("[ERR] Valid column names: " + ", ".join(COL_AVAILABLE))
                     sys.exit(2)
         # Sort
-        if 'sort' in config['config'] and config['config']['sort']:
-            sort = config['config']['sort']
+        if "sort" in config["config"] and config["config"]["sort"]:
+            sort = config["config"]["sort"]
             if sort not in COL_AVAILABLE:
-                logerr('[ERR] Invalid sort column name in config: \'' + sort + '\'')
-                logerr('[ERR] Valid sort column names: ' + ', '.join(COL_AVAILABLE))
+                logerr("[ERR] Invalid sort column name in config: '" + sort + "'")
+                logerr("[ERR] Valid sort column names: " + ", ".join(COL_AVAILABLE))
                 sys.exit(2)
         # Order
-        if 'order' in config['config'] and config['config']['order']:
-            order = config['config']['order']
-            if order not in ('asc', 'desc'):
-                logerr('[ERR] Invalid sort order in config: \'' + order + '\'')
-                logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
+        if "order" in config["config"] and config["config"]["order"]:
+            order = config["config"]["order"]
+            if order not in ("asc", "desc"):
+                logerr("[ERR] Invalid sort order in config: '" + order + "'")
+                logerr("[ERR] Valid sort orders: 'asc' and 'desc'")
                 sys.exit(2)
         # Custom fields
-        if 'cust' in config['config']:
-            if 'cust1' in config['config']['cust']:
-                if 'width' in config['config']['cust']['cust1']:
-                    if config['config']['cust']['cust1']['width'] is None:
-                        logerr('[ERR] cust1 width is empty in config')
+        if "cust" in config["config"]:
+            if "cust1" in config["config"]["cust"]:
+                if "width" in config["config"]["cust"]["cust1"]:
+                    if config["config"]["cust"]["cust1"]["width"] is None:
+                        logerr("[ERR] cust1 width is empty in config")
                         sys.exit(2)
-                    elif not Num.isint(config['config']['cust']['cust1']['width']):
-                        logerr('[ERR] cust1 width is not a valid integer in config')
+                    elif not Num.isint(config["config"]["cust"]["cust1"]["width"]):
+                        logerr("[ERR] cust1 width is not a valid integer in config")
                         sys.exit(2)
-                    elif config['config']['cust']['cust1']['width'] < 1:
-                        logerr('[ERR] cust1 width is less than 1 in config')
+                    elif config["config"]["cust"]["cust1"]["width"] < 1:
+                        logerr("[ERR] cust1 width is less than 1 in config")
                         sys.exit(2)
-            if 'cust2' in config['config']['cust']:
-                if 'width' in config['config']['cust']['cust2']:
-                    if config['config']['cust']['cust2']['width'] is None:
-                        logerr('[ERR] cust2 width is empty in config')
+            if "cust2" in config["config"]["cust"]:
+                if "width" in config["config"]["cust"]["cust2"]:
+                    if config["config"]["cust"]["cust2"]["width"] is None:
+                        logerr("[ERR] cust2 width is empty in config")
                         sys.exit(2)
-                    elif not Num.isint(config['config']['cust']['cust2']['width']):
-                        logerr('[ERR] cust2 width is not a valid integer in config')
+                    elif not Num.isint(config["config"]["cust"]["cust2"]["width"]):
+                        logerr("[ERR] cust2 width is not a valid integer in config")
                         sys.exit(2)
-                    elif config['config']['cust']['cust2']['width'] < 1:
-                        logerr('[ERR] cust2 width is less than 1 in config')
+                    elif config["config"]["cust"]["cust2"]["width"] < 1:
+                        logerr("[ERR] cust2 width is less than 1 in config")
                         sys.exit(2)
-            if 'cust3' in config['config']['cust']:
-                if 'width' in config['config']['cust']['cust3']:
-                    if config['config']['cust']['cust3']['width'] is None:
-                        logerr('[ERR] cust3 width is empty in config')
+            if "cust3" in config["config"]["cust"]:
+                if "width" in config["config"]["cust"]["cust3"]:
+                    if config["config"]["cust"]["cust3"]["width"] is None:
+                        logerr("[ERR] cust3 width is empty in config")
                         sys.exit(2)
-                    elif not Num.isint(config['config']['cust']['cust3']['width']):
-                        logerr('[ERR] cust3 width is not a valid integer in config')
+                    elif not Num.isint(config["config"]["cust"]["cust3"]["width"]):
+                        logerr("[ERR] cust3 width is not a valid integer in config")
                         sys.exit(2)
-                    elif config['config']['cust']['cust3']['width'] < 1:
-                        logerr('[ERR] cust3 width is less than 1 in config')
+                    elif config["config"]["cust"]["cust3"]["width"] < 1:
+                        logerr("[ERR] cust3 width is less than 1 in config")
                         sys.exit(2)
         # Table border
-        if 'table' in config['config'] and config['config']['table']:
-            if config['config']['table'] not in ('thin', 'thick', 'ascii'):
-                logerr('[ERR] Invalid table border style in config: ' + config['config']['table'])
-                logerr('[ERR] Allowed values: thin, thick and ascii')
+        if "table" in config["config"] and config["config"]["table"]:
+            if config["config"]["table"] not in ("thin", "thick", "ascii"):
+                logerr("[ERR] Invalid table border style in config: " + config["config"]["table"])
+                logerr("[ERR] Allowed values: thin, thick and ascii")
                 sys.exit(2)
 
     # Validate trades
-    if not config['trades']:
-        print('No trades found, check your config')
+    if not config["trades"]:
+        print("No trades found, check your config")
         sys.exit(0)
 
 
 def build_settings(settings, config, default_columns, default_sort, default_order):
-    '''Merge settings from command line and config file'''
+    """Merge settings from command line and config file"""
 
     # Apply column sort
-    if settings['sort']:
+    if settings["sort"]:
         # Set via cmd args, all good
         pass
-    elif 'sort' in config['config'] and config['config']['sort']:
+    elif "sort" in config["config"] and config["config"]["sort"]:
         # Available in configuration file
-        settings['sort'] = config['config']['sort']
+        settings["sort"] = config["config"]["sort"]
     else:
         # Nowhere set, use defaults
-        settings['sort'] = default_sort
+        settings["sort"] = default_sort
 
     # Apply column sort order
-    if settings['order']:
+    if settings["order"]:
         # Set via cmd args, all good
         pass
-    elif 'order' in config['config'] and config['config']['order']:
+    elif "order" in config["config"] and config["config"]["order"]:
         # Available in configuration file
-        settings['order'] = config['config']['order']
+        settings["order"] = config["config"]["order"]
     else:
         # Nowhere set, use defaults
-        settings['order'] = default_order
+        settings["order"] = default_order
 
     # Apply columns to display
-    if settings['cols']:
+    if settings["cols"]:
         # Set via cmd args, all good
         pass
-    elif 'columns' in config['config'] and config['config']['columns']:
+    elif "columns" in config["config"] and config["config"]["columns"]:
         # Available in configuration file
-        settings['cols'] = config['config']['columns'].split()
+        settings["cols"] = config["config"]["columns"].split()
     else:
         # Nowhere set, use defaults
-        settings['cols'] = default_columns
+        settings["cols"] = default_columns
 
     # Apply custom columns
     custom = dict()
-    if 'cust' in config['config'] and 'cust1' in config['config']['cust']:
-        custom.update({'cust1': config['config']['cust']['cust1']})
-    if 'cust' in config['config'] and 'cust2' in config['config']['cust']:
-        custom.update({'cust2': config['config']['cust']['cust2']})
-    if 'cust' in config['config'] and 'cust3' in config['config']['cust']:
-        custom.update({'cust3': config['config']['cust']['cust3']})
-    settings['cust'] = custom
+    if "cust" in config["config"] and "cust1" in config["config"]["cust"]:
+        custom.update({"cust1": config["config"]["cust"]["cust1"]})
+    if "cust" in config["config"] and "cust2" in config["config"]["cust"]:
+        custom.update({"cust2": config["config"]["cust"]["cust2"]})
+    if "cust" in config["config"] and "cust3" in config["config"]["cust"]:
+        custom.update({"cust3": config["config"]["cust"]["cust3"]})
+    settings["cust"] = custom
 
     # Apply table border settings
-    if settings['table']:
+    if settings["table"]:
         # Set via cmd args, all good
         pass
-    elif 'table' in config['config'] and config['config']['table']:
+    elif "table" in config["config"] and config["config"]["table"]:
         # Available in configuration file
-        settings['table'] = config['config']['table']
+        settings["table"] = config["config"]["table"]
     else:
         # Nowhere set, use defaults
-        settings['table'] = 'thin'
+        settings["table"] = "thin"
 
     return settings
 
 
 def bootstrap():
-    '''Bootstrap the application'''
+    """Bootstrap the application"""
     conf_file = get_config_path()
     conf_dir = os.path.dirname(conf_file)
 
@@ -1356,95 +1364,99 @@ def bootstrap():
         if not os.path.isdir(conf_dir):
             os.makedirs(conf_dir)
 
-        pfile = open(conf_file, 'w')
+        pfile = open(conf_file, "w")
         pfile.write(str(EXAMPLE_CONFIG))
         pfile.close()
 
 
 def parse_args(argv, settings):
-    '''Parse command line arguments.'''
+    """Parse command line arguments."""
 
     # Define command line options
     try:
-        opts, argv = getopt.getopt(argv, 'c:r:s:o:g:t:nhv', [
-            'version',
-            'help',
-            'config=',
-            'row=',
-            'sort=',
-            'order=',
-            'group=',
-            'table=',
-            'nocolor',
-            'human',
-            'verbose'
-        ])
+        opts, argv = getopt.getopt(
+            argv,
+            "c:r:s:o:g:t:nhv",
+            [
+                "version",
+                "help",
+                "config=",
+                "row=",
+                "sort=",
+                "order=",
+                "group=",
+                "table=",
+                "nocolor",
+                "human",
+                "verbose",
+            ],
+        )
     except getopt.GetoptError as err:
-        logerr('[ERR] ', err)
-        logerr('Type --help for help')
+        logerr("[ERR] ", err)
+        logerr("Type --help for help")
         sys.exit(2)
 
     # Get command line options
     for opt, arg in opts:
         # Show help screen
-        if opt == '--help':
+        if opt == "--help":
             print_help()
             sys.exit()
         # Show version
-        elif opt == '--version':
+        elif opt == "--version":
             print_version()
             sys.exit()
         # Custom rows to display in the given order
-        elif opt in ('-r', '--row'):
-            for col in arg.split(' '):
+        elif opt in ("-r", "--row"):
+            for col in arg.split(" "):
                 if col not in COL_AVAILABLE:
-                    logerr('[ERR] Invalid column name: \'' + col + '\'')
-                    logerr('[ERR] Valid column names: ' + ', '.join(COL_AVAILABLE))
+                    logerr("[ERR] Invalid column name: '" + col + "'")
+                    logerr("[ERR] Valid column names: " + ", ".join(COL_AVAILABLE))
                     sys.exit(2)
-            settings['cols'] = arg.split()
+            settings["cols"] = arg.split()
         # Get column to sort
-        elif opt in ('-s', '--sort'):
+        elif opt in ("-s", "--sort"):
             if arg not in COL_AVAILABLE:
-                logerr('[ERR] Invalid sort column name: \'' + arg + '\'')
-                logerr('[ERR] Valid sort column names: ' + ', '.join(COL_AVAILABLE))
+                logerr("[ERR] Invalid sort column name: '" + arg + "'")
+                logerr("[ERR] Valid sort column names: " + ", ".join(COL_AVAILABLE))
                 sys.exit(2)
-            settings['sort'] = arg
+            settings["sort"] = arg
         # Get sort order
-        elif opt in ('-o', '--order'):
-            if arg not in ('asc', 'desc'):
-                logerr('[ERR] Invalid sort order: \'' + arg + '\'')
-                logerr('[ERR] Valid sort orders: \'asc\' and \'desc\'')
+        elif opt in ("-o", "--order"):
+            if arg not in ("asc", "desc"):
+                logerr("[ERR] Invalid sort order: '" + arg + "'")
+                logerr("[ERR] Valid sort orders: 'asc' and 'desc'")
                 sys.exit(2)
-            settings['order'] = arg
+            settings["order"] = arg
         # Get column to group
-        elif opt in ('-g', '--group'):
+        elif opt in ("-g", "--group"):
             if arg not in COL_AVAILABLE:
-                logerr('[ERR] Invalid group column name: \'' + arg + '\'')
-                logerr('[ERR] Valid group column names: ' + ', '.join(COL_AVAILABLE))
+                logerr("[ERR] Invalid group column name: '" + arg + "'")
+                logerr("[ERR] Valid group column names: " + ", ".join(COL_AVAILABLE))
                 sys.exit(2)
-            settings['group'] = arg
+            settings["group"] = arg
         # Choose table border
-        elif opt in ('-t', '--table'):
-            if arg not in('thin', 'thick', 'ascii'):
-                logerr('[ERR] Invalid table border style: \'' + arg + '\'')
-                logerr('[ERR] Allowed values: thin, thick and ascii')
+        elif opt in ("-t", "--table"):
+            if arg not in ("thin", "thick", "ascii"):
+                logerr("[ERR] Invalid table border style: '" + arg + "'")
+                logerr("[ERR] Allowed values: thin, thick and ascii")
                 sys.exit(2)
-            settings['table'] = arg
+            settings["table"] = arg
         # Use different config file
-        elif opt in ('-c', '--config'):
+        elif opt in ("-c", "--config"):
             if not os.path.isfile(arg):
-                logerr('[ERR] ' + opt + ' specified config does not exist: ' + arg)
+                logerr("[ERR] " + opt + " specified config does not exist: " + arg)
                 sys.exit(2)
-            settings['path'] = arg
+            settings["path"] = arg
         # Disable color
-        elif opt in ('-n', '--nocolor'):
-            settings['color'] = False
+        elif opt in ("-n", "--nocolor"):
+            settings["color"] = False
         # Enable human readable number format
-        elif opt in ('-h', '--human'):
-            settings['human'] = True
+        elif opt in ("-h", "--human"):
+            settings["human"] = True
         # Verbose output
-        elif opt in ('-v', '--verbose'):
-            settings['verbose'] = True
+        elif opt in ("-v", "--verbose"):
+            settings["verbose"] = True
 
     return settings
 
@@ -1453,20 +1465,21 @@ def parse_args(argv, settings):
 # Main Function
 ############################################################
 
+
 def main(argv):
-    '''Main entrypoint.'''
+    """Main entrypoint."""
 
     # Default settings if not otherwise specified via config or cmd args
     settings = {
-        'path':    None,     # Path to configuration file
-        'color':   True,     # Colorize output
-        'human':   False,    # Human readable number format
-        'verbose': False,    # Verbosity?
-        'table':   None,     # Table border style
-        'sort':    None,     # Default sort
-        'group':   None,     # Group column
-        'order':   None,     # Default sort order
-        'cols':    dict()    # What columns in what order to display
+        "path": None,  # Path to configuration file
+        "color": True,  # Colorize output
+        "human": False,  # Human readable number format
+        "verbose": False,  # Verbosity?
+        "table": None,  # Table border style
+        "sort": None,  # Default sort
+        "group": None,  # Group column
+        "order": None,  # Default sort order
+        "cols": dict(),  # What columns in what order to display
     }
 
     # Bootstrap application (creating config & dir)
@@ -1476,60 +1489,60 @@ def main(argv):
     settings = parse_args(argv, settings)
 
     # Read and validate configuration file
-    config = read_config(settings['path'])
+    config = read_config(settings["path"])
     validate_config(config)
 
     # Merge cmd args and config file settings
-    settings = build_settings(settings, config, COL_DEFAULT, None, 'asc')
+    settings = build_settings(settings, config, COL_DEFAULT, None, "asc")
     # Get remote price info
     url = Fetch(True)
     try:
         currencies = to_json(url.fetch(API_URL))
     except HTTPError as err:
-        logerr('[ERR] Cannot connect to %s' % (API_URL))
-        logerr('[ERR] Error code: ', err.code)
+        logerr("[ERR] Cannot connect to %s" % (API_URL))
+        logerr("[ERR] Error code: ", err.code)
         sys.exit(2)
     except URLError as err:
-        logerr('[ERR] Cannot connect to %s' % (API_URL))
-        logerr('[ERR] Reason:', err.reason)
+        logerr("[ERR] Cannot connect to %s" % (API_URL))
+        logerr("[ERR] Reason:", err.reason)
         sys.exit(2)
 
     # Overwrite global Column settings
-    if 'cust1' in settings['cust']:
-        COL_SETTINGS['cust1']['width'] = settings['cust']['cust1']['width']
-        COL_SETTINGS['cust1']['head'] = settings['cust']['cust1'].get(
-            'headline',
-            COL_SETTINGS['cust1']['head']
+    if "cust1" in settings["cust"]:
+        COL_SETTINGS["cust1"]["width"] = settings["cust"]["cust1"]["width"]
+        COL_SETTINGS["cust1"]["head"] = settings["cust"]["cust1"].get(
+            "headline", COL_SETTINGS["cust1"]["head"]
         )
-    if 'cust2' in settings['cust']:
-        COL_SETTINGS['cust2']['width'] = settings['cust']['cust2']['width']
-        COL_SETTINGS['cust2']['head'] = settings['cust']['cust2'].get(
-            'headline',
-            COL_SETTINGS['cust2']['head']
+    if "cust2" in settings["cust"]:
+        COL_SETTINGS["cust2"]["width"] = settings["cust"]["cust2"]["width"]
+        COL_SETTINGS["cust2"]["head"] = settings["cust"]["cust2"].get(
+            "headline", COL_SETTINGS["cust2"]["head"]
         )
-    if 'cust3' in settings['cust']:
-        COL_SETTINGS['cust3']['width'] = settings['cust']['cust3']['width']
-        COL_SETTINGS['cust3']['head'] = settings['cust']['cust3'].get(
-            'headline',
-            COL_SETTINGS['cust3']['head']
+    if "cust3" in settings["cust"]:
+        COL_SETTINGS["cust3"]["width"] = settings["cust"]["cust3"]["width"]
+        COL_SETTINGS["cust3"]["head"] = settings["cust"]["cust3"].get(
+            "headline", COL_SETTINGS["cust3"]["head"]
         )
 
     # Initialize and run Coinwatch
-    cowa = Coinwatch({
-        'color':  settings['color'],  # Colorize output?
-        'human':  settings['human'],  # Humanize number output?
-        'sort':   settings['sort'],   # Column to sort
-        'order':  settings['order'],  # Sort order
-        'group':  settings['group'],  # Group column
-        'table':  settings['table'],  # Table border style
-        'cols':   settings['cols']    # Columns to display
-    }, COL_SETTINGS)
-    cowa.print_stats(currencies, config['trades'])
+    cowa = Coinwatch(
+        {
+            "color": settings["color"],  # Colorize output?
+            "human": settings["human"],  # Humanize number output?
+            "sort": settings["sort"],  # Column to sort
+            "order": settings["order"],  # Sort order
+            "group": settings["group"],  # Group column
+            "table": settings["table"],  # Table border style
+            "cols": settings["cols"],  # Columns to display
+        },
+        COL_SETTINGS,
+    )
+    cowa.print_stats(currencies, config["trades"])
 
 
 ############################################################
 # Main Entry Point
 ############################################################
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv[1:])
