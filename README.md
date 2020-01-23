@@ -1,5 +1,6 @@
 # coinwatch
 
+**[Installation](#installation)** |
 **[Usage](#usage)** |
 **[Screenshots](#screenshots)** |
 **[Features](#features)** |
@@ -10,12 +11,28 @@
 **[Requirements](#requirements)** |
 **[License](#license)**
 
+
+[![](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![PyPI](https://img.shields.io/pypi/v/coinwatch)](https://pypi.org/project/coinwatch/)
+[![PyPI - Status](https://img.shields.io/pypi/status/coinwatch)](https://pypi.org/project/coinwatch/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/coinwatch)](https://pypi.org/project/coinwatch/)
+[![PyPI - Format](https://img.shields.io/pypi/format/coinwatch)](https://pypi.org/project/coinwatch/)
+[![PyPI - Implementation](https://img.shields.io/pypi/implementation/coinwatch)](https://pypi.org/project/coinwatch/)
+
 [![Build Status](https://travis-ci.org/cytopia/coinwatch.svg?branch=master)](https://travis-ci.org/cytopia/coinwatch)
-[![Release](https://img.shields.io/github/release/cytopia/coinwatch.svg)](https://github.com/cytopia/coinwatch/releases)
+[![Build Status](https://github.com/cytopia/coinwatch/workflows/linting/badge.svg)](https://github.com/cytopia/coinwatch/actions?workflow=linting)
+[![Build Status](https://github.com/cytopia/coinwatch/workflows/testing/badge.svg)](https://github.com/cytopia/coinwatch/actions?workflow=testing)
+
 
 Coinwatch is a low-dependency python-based console client client to keep track of your crypto trades and easily let's you see if you are winning or losing.
 
 All you have to do is enter all of your purchases: **When**, **How many** coins and **price per coin**. Then each time you launch `coinwatch`, it will show your current status and will make you happy or sad.
+
+
+## Installation
+```bash
+pip install coinwatch
+```
 
 
 ## Usage
