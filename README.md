@@ -1,5 +1,6 @@
 # coinwatch
 
+**[Installation](#installation)** |
 **[Usage](#usage)** |
 **[Screenshots](#screenshots)** |
 **[Features](#features)** |
@@ -26,6 +27,12 @@
 Coinwatch is a low-dependency python-based console client client to keep track of your crypto trades and easily let's you see if you are winning or losing.
 
 All you have to do is enter all of your purchases: **When**, **How many** coins and **price per coin**. Then each time you launch `coinwatch`, it will show your current status and will make you happy or sad.
+
+
+## Installation
+```bash
+pip install coinwatch
+```
 
 
 ## Usage
