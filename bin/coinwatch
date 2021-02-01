@@ -63,7 +63,9 @@ except Exception:
 NAME = "coinwatch"
 AUTHOR = "cytopia"
 VERSION = "0.16.0"
-API_URL = "https://api.coinmarketcap.com/v1/ticker/?limit=0"
+# API_URL = "https://api.coinmarketcap.com/v1/ticker/?limit=0"
+API_URL = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
+API_KEY = ""
 
 
 # Row settings
@@ -807,7 +809,8 @@ class Fetch(object):
 
         headers = dict()
         if self.__settings["randomize_ua"]:
-            headers = {"User-Agent": self.__get_ua()}
+            headers = {"User-Agent": self.__get_ua(), "X-CMC_PRO_API_KEY": API_KEY}
+            # headers = {"X-CMC_PRO_API_KEY": API_KEY}
 
         req = Request(url, headers=headers)
         try:
@@ -890,7 +893,8 @@ class Coinwatch(object):
         amount = Coinwatch.__get_amount(trade)
         invest = Coinwatch.__get_invest(trade)
         buyprice = Coinwatch.__get_price(trade)
-        nowprice = Num.get(currency["price_usd"])
+        # nowprice = Num.get(currency["price_usd"])
+        nowprice = Num.get(currency["quote"]["USD"]["price"])
 
         # Calculate diffprice, wealth, profit and percent
         diffprice = Num.sub(nowprice, buyprice)
@@ -899,18 +903,20 @@ class Coinwatch(object):
         percent = Num.sub(Num.percent(wealth, invest), 100)
 
         # Normalize values from remote
-        if not Num.isnumber(currency["percent_change_1h"]):
-            currency["percent_change_1h"] = Num.get("0.0")
-        if not Num.isnumber(currency["percent_change_24h"]):
-            currency["percent_change_24h"] = Num.get("0.0")
-        if not Num.isnumber(currency["percent_change_7d"]):
-            currency["percent_change_7d"] = Num.get("0.0")
-        if not Num.isnumber(currency["24h_volume_usd"]):
-            currency["24h_volume_usd"] = Num.get("0.0")
-        if not Num.isnumber(currency["market_cap_usd"]):
-            currency["market_cap_usd"] = Num.get("0.0")
-        if not Num.isnumber(currency["available_supply"]):
-            currency["available_supply"] = Num.get("0.0")
+        # if not Num.isnumber(currency["percent_change_1h"]):
+        #     currency["percent_change_1h"] = Num.get("0.0")
+        if not Num.isnumber(currency["quote"]["USD"]["percent_change_1h"]):
+            currency["quote"]["USD"]["percent_change_1h"] = Num.get("0.0")        
+        if not Num.isnumber(currency["quote"]["USD"]["percent_change_24h"]):
+            currency["quote"]["USD"]["percent_change_24h"] = Num.get("0.0")
+        if not Num.isnumber(currency["quote"]["USD"]["percent_change_7d"]):
+            currency["quote"]["USD"]["percent_change_7d"] = Num.get("0.0")["quote"]["USD"]
+        if not Num.isnumber(currency["quote"]["USD"]["volume_24h"]):
+            currency["quote"]["USD"]["volume_24h"] = Num.get("0.0")
+        if not Num.isnumber(currency["quote"]["USD"]["market_cap"]):
+            currency["quote"]["USD"]["market_cap"] = Num.get("0.0")
+        if not Num.isnumber(currency["circulating_supply"]):
+            currency["circulating_supply"] = Num.get("0.0")
         if not Num.isnumber(currency["total_supply"]):
             currency["total_supply"] = Num.get("0.0")
         if not Num.isnumber(currency["max_supply"]):
@@ -930,12 +936,12 @@ class Coinwatch(object):
             "wealth": wealth,
             "profit": profit,
             "percent": percent,
-            "percent1h": currency["percent_change_1h"],
-            "percent24h": currency["percent_change_24h"],
-            "percent7d": currency["percent_change_7d"],
-            "vol_24h": currency["24h_volume_usd"],
-            "marketcap": currency["market_cap_usd"],
-            "supply_a": currency["available_supply"],
+            "percent1h": currency["quote"]["USD"]["percent_change_1h"],
+            "percent24h": currency["quote"]["USD"]["percent_change_24h"],
+            "percent7d": currency["quote"]["USD"]["percent_change_7d"],
+            "vol_24h": currency["quote"]["USD"]["volume_24h"],
+            "marketcap": currency["quote"]["USD"]["market_cap"],
+            "supply_a": currency["circulating_supply"],
             "supply_t": currency["total_supply"],
             "supply_m": currency["max_supply"],
         }
@@ -1043,13 +1049,17 @@ class Coinwatch(object):
         # # Add headline
         tbl.add_header_row({a: col_settings[a]["head"] for a in col_settings.keys()})
 
-        for currency in currencies:
+        # for currency in currencies:
+        for currency in currencies['data']:
 
             # Do we track a currency?
             # (Remote currency is found in local config)
-            if currency["id"] in trades:
 
-                name = currency["id"]
+            # if currency["id"] in trades:
+            if currency["name"] in trades:
+
+                # name = currency["id"]
+                name = currency["name"]
 
                 # Only proceed if trade happened (defined in config)
                 if trades[name]:
