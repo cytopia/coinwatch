@@ -1056,10 +1056,10 @@ class Coinwatch(object):
             # (Remote currency is found in local config)
 
             # if currency["id"] in trades:
-            if currency["name"] in trades:
+            if currency["name"].lower() in trades:
 
                 # name = currency["id"]
-                name = currency["name"]
+                name = currency["name"].lower()
 
                 # Only proceed if trade happened (defined in config)
                 if trades[name]:
