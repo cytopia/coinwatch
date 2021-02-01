@@ -906,7 +906,7 @@ class Coinwatch(object):
         # if not Num.isnumber(currency["percent_change_1h"]):
         #     currency["percent_change_1h"] = Num.get("0.0")
         if not Num.isnumber(currency["quote"]["USD"]["percent_change_1h"]):
-            currency["quote"]["USD"]["percent_change_1h"] = Num.get("0.0")        
+            currency["quote"]["USD"]["percent_change_1h"] = Num.get("0.0")
         if not Num.isnumber(currency["quote"]["USD"]["percent_change_24h"]):
             currency["quote"]["USD"]["percent_change_24h"] = Num.get("0.0")
         if not Num.isnumber(currency["quote"]["USD"]["percent_change_7d"]):
