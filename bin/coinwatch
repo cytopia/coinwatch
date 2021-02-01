@@ -1050,7 +1050,7 @@ class Coinwatch(object):
         tbl.add_header_row({a: col_settings[a]["head"] for a in col_settings.keys()})
 
         # for currency in currencies:
-        for currency in currencies['data']:
+        for currency in currencies["data"]:
 
             # Do we track a currency?
             # (Remote currency is found in local config)
